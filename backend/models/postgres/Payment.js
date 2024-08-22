@@ -1,35 +1,39 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/sequelize');
-const Order = require('./Order');
+const { Model, DataTypes } = require('sequelize');
 
-const Payment = sequelize.define('Payment', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  order_id: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: Order,
-      key: 'id',
+module.exports = function(sequelize) {
+  class Payment extends Model {}
+
+  Payment.init({
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
     },
-  },
-  amount: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
-  },
-  payment_method: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  status: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    defaultValue: 'pending',
-  },
-}, {
-  timestamps: true,
-});
+    order_id: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: 'Orders',
+        key: 'id',
+      },
+    },
+    amount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
+    payment_method: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    status: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'pending',
+    },
+  }, {
+    sequelize,
+    modelName: 'Payment',
+    timestamps: true,
+  });
 
-module.exports = Payment;
+  return Payment;
+};

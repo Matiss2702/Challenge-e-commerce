@@ -1,39 +1,42 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../../config/sequelize');
-const Order = require('./Order');
-const Product = require('./Product');
+const { Model, DataTypes } = require('sequelize');
 
-const OrderItem = sequelize.define('OrderItem', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  order_id: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: Order,
-      key: 'id',
-    },
-  },
-  product_id: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: Product,
-      key: 'id',
-    },
-  },
-  quantity: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 1,
-  },
-  price: {
-    type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
-  },
-}, {
-  timestamps: true,
-});
+module.exports = function(sequelize) {
+  class OrderItem extends Model {}
 
-module.exports = OrderItem;
+  OrderItem.init({
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    order_id: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: 'Orders',
+        key: 'id',
+      },
+    },
+    product_id: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: 'Products',
+        key: 'id',
+      },
+    },
+    quantity: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+    },
+    price: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+    },
+  }, {
+    sequelize,
+    modelName: 'OrderItem',
+    timestamps: true,
+  });
+
+  return OrderItem;
+};
