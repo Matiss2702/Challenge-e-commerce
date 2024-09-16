@@ -26,7 +26,7 @@ module.exports = (sequelize) => {
       defaultValue: 'pending',
     },
   }, {
-    sequelize, // This should be correctly set
+    sequelize,
     modelName: 'Order',
     timestamps: true,
   });

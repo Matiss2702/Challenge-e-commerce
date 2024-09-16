@@ -16,6 +16,10 @@ const UserSchema = new Schema({
     required: true,
     unique: true,
   },
+  password: {
+    type: String,
+    required: true,
+  },
   role: {
     type: String,
     enum: ['ROLE_USER', 'ROLE_STORE_KEEPER', 'ROLE_ADMIN', 'ROLE_COMPTA'],

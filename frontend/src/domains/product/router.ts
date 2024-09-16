@@ -1,31 +1,45 @@
-import type { RouteRecordRaw } from "vue-router";
+// router/index.ts
+import ProductDetailPage from '@/domains/product/pages/ProductDetailPage.vue';
+import ProductsPage from '@/domains/product/pages/ProductsPage.vue';
+import CategoriesPage from '@/domains/product/pages/CategoriePage.vue';
+import CartPage from '@/domains/product/pages/CartPage.vue'
 
-export const routerPageNameCategory = Object.freeze({
-	CATEGORIES_PAGE: "categories",
-	CATEGORY_PAGE: "category",
-	PRODUCT_PAGE: "product",
-	SEARCH_PAGE: "search",
+const routePageName = (baseName: string) => ({
+  productList: `${baseName}-product-list`,
+  productDetail: `${baseName}-product-detail`,
+  categorieList: `${baseName}-categorie-list`,
+  categorieDetail: `${baseName}-categorie-detail`,
+  cartDetail: `${baseName}-cart-detail`,
 });
 
-export default (): RouteRecordRaw[] => [
-	// {
-	// 	name: routerPageNameCategory.CATEGORIES_PAGE,
-	// 	path: "/categories",
-	// 	component: () => import("./pages/CategoriesPage.vue"),
-	// },
-	// {
-	// 	name: routerPageNameCategory.CATEGORY_PAGE,
-	// 	path: "/category/:categoryName",
-	// 	component: () => import("./pages/ProductsPage.vue"),
-	// },
-	// {
-	// 	name: routerPageNameCategory.PRODUCT_PAGE,
-	// 	path: "/product/:productSheetId",
-	// 	component: () => import("./pages/ProductPage.vue"),
-	// },
-	{
-		name: routerPageNameCategory.SEARCH_PAGE,
-		path: "/search/:productSheetName",
-		component: () => import("./pages/ProductsPage.vue"),
-	},
+const productRoutes = () => [
+  {
+    path: '/products',
+    name: routePageName('product').productList,
+    component: ProductsPage,
+  },
+  {
+    path: '/products/:id',
+    name: routePageName('product').productDetail,
+    component: ProductDetailPage,
+    props: true, // Assurez-vous que les props sont activés
+  },
+  {
+    path: '/categories',
+    name: routePageName('product').categorieList,
+    component: CategoriesPage,
+  },
+  {
+    path: '/categories/:id',
+    name: routePageName('product').categorieDetail,
+    component: ProductDetailPage,
+    props: true,
+  },
+  {
+    path: '/cart',
+    name: routePageName('product').cartDetail,
+    component: CartPage,
+  },
 ];
+
+export default productRoutes;

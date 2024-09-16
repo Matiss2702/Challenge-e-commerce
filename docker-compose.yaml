@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   mongo:
     image: mongo
@@ -8,22 +6,22 @@ services:
     volumes:
       - mongo-data:/data/db
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=password
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
 
   node:
     image: node:20.0.0-alpine
     environment:
       PORT: 3000
       MONGO_URL: mongodb://root:password@mongo:27017/app?authSource=admin
-      DATABASE_URL: postgres://root:password@postgres:5432/app
+      DATABASE_URL: postgres://postgres:password@postgres:5432/app
       JWT_SECRET: secret
     ports:
-      - 127.0.0.1:3000:3000
+      - "3000:3000"
     volumes:
       - ./backend:/home/node/app
     working_dir: /home/node/app
-    command: sh -c "npm install && npm run dev node --watch"
+    command: sh -c "npm install && npm run dev"
     depends_on:
       - postgres
       - mongo
@@ -34,7 +32,7 @@ services:
     working_dir: /home/node
     command: sh -c "npm install && npm run dev -- --port 8000 --host 0.0.0.0"
     ports:
-      - 127.0.0.1:8000:8000
+      - "8000:8000"
     volumes:
       - ./frontend:/home/node
 
@@ -45,7 +43,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: root
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: app
 
@@ -53,10 +51,11 @@ services:
     image: adminer
     restart: unless-stopped
     ports:
-      - 8080:8080
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
     depends_on:
       - postgres
-      - postgres-poste
 
   poste:
     image: node:20.0.0-alpine
@@ -65,11 +64,11 @@ services:
       DATABASE_URL: postgres://root:password@postgres-poste:5432/poste
       JWT_SECRET: posteAPI
     ports:
-      - 127.0.0.1:3001:3001
+      - "3001:3001"
     volumes:
       - ./poste:/home/node/poste
     working_dir: /home/node/poste
-    command: sh -c "npm install && npm run dev node --watch"
+    command: sh -c "npm install && npm run dev"
     depends_on:
       - postgres-poste
 

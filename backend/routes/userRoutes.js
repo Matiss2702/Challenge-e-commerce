@@ -1,13 +1,13 @@
 const express = require('express');
-const { getAllUsers, createUser, updateUser, deleteUser } = require('../controllers/userController');
-const authMiddleware = require('../middleware/auth');
+const authMiddleware = require('../middleware/authMiddleware');
+const roleMiddleware = require('../middleware/roleMiddleware');
+const userController = require('../controllers/userController');
 
 const router = express.Router();
 
-// Protéger les routes avec le middleware d'authentification
-router.get('/', authMiddleware, getAllUsers);
-router.post('/', authMiddleware, createUser);
-router.put('/:id', authMiddleware, updateUser);
-router.delete('/:id', authMiddleware, deleteUser);
+router.get('/', authMiddleware, roleMiddleware('ROLE_ADMIN'), userController.getAllUsers);
+router.post('/', authMiddleware, roleMiddleware('ROLE_ADMIN'), userController.createUser);
+router.put('/:id', authMiddleware, roleMiddleware('ROLE_ADMIN'), userController.updateUser);
+router.delete('/:id', authMiddleware, roleMiddleware('ROLE_ADMIN'), userController.deleteUser);
 
 module.exports = router;

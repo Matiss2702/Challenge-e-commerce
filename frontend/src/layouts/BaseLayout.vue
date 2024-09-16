@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import TheHeader from "../domains/navigation/components/TheHeader.vue";
-import TheFooter from "../domains/navigation/components/TheFooter.vue";
-
+import TheFooter from '@/domains/navigation/components/TheFooter.vue';
+import TheNavbar from '@/domains/navigation/components/TheNavbar.vue';
 </script>
 
 <template>
-	<TheHeader />
+	<div class="min-h-screen flex flex-col">
+		<TheNavbar />
+		<main class="flex-1">
+			<router-view></router-view>
+		</main>
+		<TheFooter />
+	</div>
 
-	<main>
-		<RouterView />
-	</main>
-
-	<TheFooter />
 </template>
+	

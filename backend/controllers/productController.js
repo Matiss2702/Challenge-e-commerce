@@ -2,7 +2,6 @@ const ProductPostgres = require('../models/postgres/Product');
 const ProductMongo = require('../models/mongo/ProductMongo');
 const productSchema = require('../schemas/productSchema');
 
-// Get all products (MongoDB)
 exports.getAllProducts = async (req, res) => {
   try {
     const products = await ProductMongo.find();
@@ -12,7 +11,6 @@ exports.getAllProducts = async (req, res) => {
   }
 };
 
-// Create a new product (PostgreSQL and synchronize with MongoDB)
 exports.createProduct = async (req, res) => {
   try {
     const validation = productSchema.safeParse(req.body);
@@ -21,13 +19,10 @@ exports.createProduct = async (req, res) => {
     }
 
     const { name, description, price, category, brand, stock } = validation.data;
-
-    // Création du produit dans PostgreSQL
     const newProductPostgres = await ProductPostgres.create({
       name, description, price, category, brand, stock
     });
 
-    // Synchronisation avec MongoDB
     const newProductMongo = new ProductMongo({
       postgresId: newProductPostgres.id,
       name, description, price, category, brand, stock
@@ -40,7 +35,6 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// Update a product (PostgreSQL and MongoDB)
 exports.updateProduct = async (req, res) => {
   try {
     const validation = productSchema.safeParse(req.body);
@@ -55,7 +49,6 @@ exports.updateProduct = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    // Mise à jour du produit dans PostgreSQL
     productPostgres.name = name;
     productPostgres.description = description;
     productPostgres.price = price;
@@ -64,7 +57,6 @@ exports.updateProduct = async (req, res) => {
     productPostgres.stock = stock;
     await productPostgres.save();
 
-    // Synchronisation avec MongoDB
     await ProductMongo.findOneAndUpdate(
       { postgresId: productPostgres.id },
       { name, description, price, category, brand, stock }
@@ -76,7 +68,6 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
-// Delete a product (PostgreSQL and MongoDB)
 exports.deleteProduct = async (req, res) => {
   try {
     const productPostgres = await ProductPostgres.findByPk(req.params.id);
@@ -84,10 +75,7 @@ exports.deleteProduct = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    // Suppression du produit dans PostgreSQL
     await productPostgres.destroy();
-
-    // Suppression dans MongoDB
     await ProductMongo.findOneAndDelete({ postgresId: productPostgres.id });
 
     res.json({ message: 'Product deleted' });

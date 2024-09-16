@@ -26,7 +26,7 @@ const runMongoMigrations = async () => {
     await mongoose.connect(process.env.MONGO_URL, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-    });
+    });    
     console.log('MongoDB connected');
 
     const models = require('../models/mongo');

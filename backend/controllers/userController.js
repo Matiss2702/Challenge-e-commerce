@@ -2,7 +2,6 @@ const UserPostgres = require('../models/postgres/User');
 const UserMongo = require('../models/mongo/UserMongo');
 const userSchema = require('../schemas/userSchema');
 
-// Get all users (MongoDB)
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await UserMongo.find();
@@ -12,7 +11,6 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// Create a new user (PostgreSQL and synchronize with MongoDB)
 exports.createUser = async (req, res) => {
     try {
       const validation = userSchema.safeParse(req.body);
@@ -21,11 +19,8 @@ exports.createUser = async (req, res) => {
       }
   
       const { name, email, password, role } = validation.data;
-  
-      // Crée un nouvel utilisateur dans PostgreSQL
       const newUserPostgres = await UserPostgres.create({ name, email, password, role });
   
-      // Synchronisation avec MongoDB
       const newUserMongo = new UserMongo({
         postgresId: newUserPostgres.id,
         name,
@@ -40,7 +35,6 @@ exports.createUser = async (req, res) => {
     }
   };  
 
-// Update a user (PostgreSQL and MongoDB)
 exports.updateUser = async (req, res) => {
   try {
     const validation = userSchema.safeParse(req.body);
@@ -55,14 +49,12 @@ exports.updateUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Mise à jour de l'utilisateur dans PostgreSQL
     userPostgres.name = name;
     userPostgres.email = email;
     userPostgres.password = password;
     userPostgres.role = role;
     await userPostgres.save();
 
-    // Synchronisation avec MongoDB
     await UserMongo.findOneAndUpdate(
       { postgresId: userPostgres.id },
       { name, email, role }
@@ -74,7 +66,6 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-// Delete a user (PostgreSQL and MongoDB)
 exports.deleteUser = async (req, res) => {
   try {
     const userPostgres = await UserPostgres.findByPk(req.params.id);
@@ -82,10 +73,7 @@ exports.deleteUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Suppression de l'utilisateur dans PostgreSQL
     await userPostgres.destroy();
-
-    // Suppression dans MongoDB
     await UserMongo.findOneAndDelete({ postgresId: userPostgres.id });
 
     res.json({ message: 'User deleted' });

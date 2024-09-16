@@ -1,13 +1,13 @@
 const express = require('express');
 const { getAllPayments, createPayment, updatePayment, deletePayment } = require('../controllers/paymentController');
-const authMiddleware = require('../middleware/auth');
+const authMiddleware = require('../middleware/authMiddleware');
+const roleMiddleware = require('../middleware/roleMiddleware');
 
 const router = express.Router();
 
-// Protéger les routes avec le middleware d'authentification
-router.get('/', authMiddleware, getAllPayments);
-router.post('/', authMiddleware, createPayment);
-router.put('/:id', authMiddleware, updatePayment);
-router.delete('/:id', authMiddleware, deletePayment);
+router.get('/', authMiddleware, roleMiddleware('ROLE_ADMIN'), getAllPayments);
+router.post('/', authMiddleware, roleMiddleware('ROLE_ADMIN'), createPayment);
+router.put('/:id', authMiddleware, roleMiddleware('ROLE_ADMIN'), updatePayment);
+router.delete('/:id', authMiddleware, roleMiddleware('ROLE_ADMIN'), deletePayment);
 
 module.exports = router;
