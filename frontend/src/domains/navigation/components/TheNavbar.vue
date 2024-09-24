@@ -27,6 +27,10 @@
           <img src="@/assets/user.svg" alt="User Profile" class="h-7 w-7" />
         </router-link>
 
+        <router-link v-if="isAdmin" to="/admin" class="text-black">
+          <ShieldIcon class="h-4 w-4"/>
+        </router-link>
+
         <router-link to="/cart" class="text-black">
           <img src="@/assets/cart.svg" alt="Shopping Cart" class="h-5 w-5" />
         </router-link>
@@ -45,6 +49,7 @@
 import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import { Shield as ShieldIcon } from 'lucide-vue-next';
 
 const showMenu = ref(false);
 
@@ -52,8 +57,6 @@ const links = [
   { name: 'Accueil', path: '/' },
   { name: 'Produits', path: '/products' },
   { name: 'Catégories', path: '/categories' },
-  { name: 'À propos', path: '/about' },
-  { name: 'Contact', path: '/contact' }
 ];
 
 const toggleNavbar = () => {
@@ -65,6 +68,5 @@ const isActive = (path) => computed(() => route.path === path).value;
 
 const authStore = useAuthStore();
 const isAuthenticated = computed(() => authStore.isAuthenticated);
-
-const userProfileLink = computed(() => (isAuthenticated.value ? '/profile' : '/auth'));
+const isAdmin = computed(() => authStore.hasRole('ROLE_ADMIN'));
 </script>

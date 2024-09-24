@@ -1,19 +1,15 @@
 import { ref } from 'vue';
 
-export default function useFormValidation(formData: any) {
+export default function useFormValidation(formData: any, isRegister: boolean) {
   const errors = ref<{ [key: string]: string }>({});
 
   const validateForm = () => {
     errors.value = {};
 
-    if (!formData.value.name) {
-      errors.value.name = 'Le nom est requis.';
-    }
-
     if (!formData.value.email) {
-      errors.value.email = 'L\'email est requis.';
+      errors.value.email = "L'email est requis.";
     } else if (!/\S+@\S+\.\S+/.test(formData.value.email)) {
-      errors.value.email = 'L\'email n\'est pas valide.';
+      errors.value.email = "L'email n'est pas valide.";
     }
 
     if (!formData.value.password) {
@@ -24,6 +20,16 @@ export default function useFormValidation(formData: any) {
 
     if (!formData.value.acceptRGPD) {
       errors.value.acceptRGPD = 'Vous devez accepter les conditions RGPD.';
+    }
+
+    if (isRegister) {
+      if (!formData.value.name) {
+        errors.value.name = 'Le nom est requis.';
+      }
+
+      if (!formData.value.birthdate) {
+        errors.value.birthdate = 'La date de naissance est requise.';
+      }
     }
 
     return Object.keys(errors.value).length === 0;

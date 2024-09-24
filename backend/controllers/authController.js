@@ -15,8 +15,14 @@ exports.register = async (req, res) => {
       return res.status(400).json({ errors: validation.error.errors });
     }
 
-    const { name, email, password, role } = validation.data;
-    console.log(`Received data - Name: ${name}, Email: ${email}, Role: ${role}`);
+    const { name, birthdate, email, password, role } = validation.data;
+    console.log(`Received data - Name: ${name}, Birthdate: ${birthdate}, Email: ${email}, Role: ${role}`);
+
+    const parsedBirthdate = new Date(birthdate);
+    if (isNaN(parsedBirthdate.getTime())) {
+      console.error('Invalid birthdate format');
+      return res.status(400).json({ message: 'Invalid birthdate format' });
+    }
 
     let user = await User.findOne({ where: { email } });
     if (user) {
@@ -37,6 +43,7 @@ exports.register = async (req, res) => {
 
     user = await User.create({
       name,
+      birthdate: parsedBirthdate,
       email,
       password: hashedPassword,
       role,
@@ -46,7 +53,9 @@ exports.register = async (req, res) => {
     const newUserMongo = new UserMongo({
       postgresId: user.id,
       name,
+      birthdate: parsedBirthdate,
       email,
+      password: hashedPassword,
       role,
     });
     await newUserMongo.save();
@@ -56,6 +65,7 @@ exports.register = async (req, res) => {
       user: {
         id: newUserMongo._id.toString(),
         role: user.role,
+        birthdate: user.birthdate
       },
     };
 
@@ -76,7 +86,6 @@ exports.register = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
@@ -110,6 +119,7 @@ exports.login = async (req, res) => {
       user: {
         id: userMongo._id.toString(),
         role: userMongo.role,
+        birthdate: userMongo.birthdate
       },
     };
 

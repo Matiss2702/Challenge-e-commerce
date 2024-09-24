@@ -27,16 +27,23 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
-  
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next({ name: 'auth-login' });
-  } 
-  else if (to.meta.requiredRole && !authStore.hasRole(to.meta.requiredRole as string)) {
-    next({ name: 'forbidden' }); 
-  } 
-  else {
-    next();
+
+  console.log('Navigating to:', to.name, 'with params:', to.params);
+
+  if (!authStore.user && authStore.token) {
+    await authStore.verifyTokenAndRole();
   }
+
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return next({ name: 'auth-login' });
+  }
+
+  if (to.meta.requiredRole && !authStore.hasRole(to.meta.requiredRole as string)) {
+    return next({ name: 'forbidden' });
+  }
+
+  return next();
 });
+
 
 export default router;

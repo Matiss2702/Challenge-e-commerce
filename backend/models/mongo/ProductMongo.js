@@ -21,13 +21,14 @@ const ProductSchema = new Schema({
   category: {
     type: String,
   },
-  brand: {
-    type: String,
-  },
   stock: {
     type: Number,
     required: true,
     default: 0,
+  },
+  imagePath: {
+    type: String,
+    required: false,
   },
 }, { timestamps: true });
 

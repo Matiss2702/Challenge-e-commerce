@@ -1,25 +1,14 @@
 <template>
-  <div>
     <h1>Profile</h1>
     <div v-if="user">
       <p>Nom: {{ user.name }}</p>
+      <p>Date de naissance: {{ formatDate(user.birthdate) }}</p>
       <p>Email: {{ user.email }}</p>
       <button @click="handleLogout">Déconnexion</button>
     </div>
     <div v-else>
       <p>Chargement des informations...</p>
     </div>
-
-    <Carousel>
-      <CarouselContent>
-        <CarouselItem>Slide 1 Content</CarouselItem>
-        <CarouselItem>Slide 2 Content</CarouselItem>
-        <CarouselItem>Slide 3 Content</CarouselItem>
-      </CarouselContent>
-      <CarouselPrevious />
-      <CarouselNext />
-    </Carousel>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -42,7 +31,12 @@ onMounted(async () => {
   }
 });
 
+const formatDate = (dateString: string) => {
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+  return new Date(dateString).toLocaleDateString('fr-FR', options);
+};
 const handleLogout = () => {
-  authStore.logout(router);
+  authStore.logout();
+  router.push('/');
 };
 </script>

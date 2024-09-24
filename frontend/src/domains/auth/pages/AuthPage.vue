@@ -8,6 +8,7 @@
       <TabsContent value="login">
         <FormComponent
           buttonLabel="Connexion"
+          :isRegister="false"
           @submit="handleLogin"
         />
       </TabsContent>
@@ -15,6 +16,7 @@
         <FormComponent
           :disabled="isSubmitting"
           buttonLabel="Inscription"
+          :isRegister="true"
           @submit="handleRegister"
         />
       </TabsContent>
@@ -45,7 +47,7 @@ const handleRegister = async (data: any) => {
   isSubmitting.value = true;
 
   try {
-    await authStore.register(data, router);
+    await authStore.register(data);
     console.log('Inscription réussie');
   } catch (error) {
     console.error('Erreur lors de l\'inscription:', error);
@@ -54,12 +56,13 @@ const handleRegister = async (data: any) => {
   }
 };
 
+
 const handleLogin = async (data: any) => {
   if (isSubmitting.value) return;
   isSubmitting.value = true;
 
   try {
-    await authStore.login(data, router);
+    await authStore.login(data);
     console.log('Connexion réussie');
   } catch (error) {
     console.error('Erreur lors de la connexion:', error);
@@ -67,4 +70,5 @@ const handleLogin = async (data: any) => {
     isSubmitting.value = false;
   }
 };
+
 </script>

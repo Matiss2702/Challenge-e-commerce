@@ -17,19 +17,20 @@ module.exports = function(sequelize) {
       type: DataTypes.TEXT,
     },
     price: {
-      type: DataTypes.DECIMAL(10, 2),
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     category: {
-      type: DataTypes.STRING,
-    },
-    brand: {
       type: DataTypes.STRING,
     },
     stock: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
+    },
+    imagePath: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
   }, {
     sequelize,
