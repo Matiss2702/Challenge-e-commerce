@@ -23,7 +23,7 @@
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow v-for="user in users" :key="user.postgresId">
+          <TableRow v-for="user in paginatedUsers" :key="user.postgresId">
             <TableCell>{{ user.name }}</TableCell>
             <TableCell>{{ user.email }}</TableCell>
             <TableCell>{{ user.role }}</TableCell>
@@ -43,18 +43,25 @@
             </TableCell>
           </TableRow>
         </TableBody>
-        <TableFooter v-if="users.length === 0">
+        <TableFooter v-if="paginatedUsers.length === 0">
           <TableRow>
             <TableCell colspan="4" class="text-center text-gray-500">Aucun utilisateur trouvé.</TableCell>
           </TableRow>
         </TableFooter>
       </Table>
+
+      <!-- Pagination Controls -->
+      <div class="pagination-controls">
+        <button :disabled="currentPage === 1" @click="prevPage">Précédent</button>
+        <span>Page {{ currentPage }} sur {{ totalPages }}</span>
+        <button :disabled="currentPage === totalPages" @click="nextPage">Suivant</button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import Table from '@/components/ui/table/Table.vue';
@@ -68,9 +75,34 @@ interface User {
 }
 
 const users = ref<User[]>([]);
+const currentPage = ref(1);
+const itemsPerPage = 10;
+
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const router = useRouter();
 
+// Pagination logic
+const paginatedUsers = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return users.value.slice(start, end);
+});
+
+const totalPages = computed(() => Math.ceil(users.value.length / itemsPerPage));
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
+
+// Load users from the API
 const loadUsers = async () => {
   try {
     const token = localStorage.getItem('token');
@@ -89,17 +121,16 @@ const loadUsers = async () => {
   }
 };
 
+// Navigation to add/edit form
 const goToForm = (id?: string) => {
   if (id) {
-    console.log(`Navigating to edit user with postgresId: ${id}`);
     router.push({ name: 'admin-edit-user', params: { id } });
   } else {
-    console.log('Navigating to add new user');
     router.push({ name: 'admin-add-user' });
   }
 };
 
-
+// Delete user method
 const deleteUser = async (userId: string) => {
   try {
     const token = localStorage.getItem('token');
@@ -108,7 +139,7 @@ const deleteUser = async (userId: string) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    users.value = users.value.filter(user => user.postgresId !== userId);
+    users.value = users.value.filter((user) => user.postgresId !== userId);
   } catch (error) {
     console.error('Erreur lors de la suppression de l\'utilisateur :', error);
   }
@@ -127,5 +158,16 @@ onMounted(() => {
 .admin-content {
   flex-grow: 1;
   padding: 20px;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.pagination-controls button {
+  margin: 0 10px;
 }
 </style>

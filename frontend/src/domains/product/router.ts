@@ -1,4 +1,3 @@
-// router/index.ts
 import ProductDetailPage from '@/domains/product/pages/ProductDetailPage.vue';
 import ProductsPage from '@/domains/product/pages/ProductsPage.vue';
 import CategoriesPage from '@/domains/product/pages/CategoriePage.vue';
@@ -22,7 +21,7 @@ const productRoutes = () => [
     path: '/products/:id',
     name: routePageName('product').productDetail,
     component: ProductDetailPage,
-    props: true, // Assurez-vous que les props sont activés
+    props: true,
   },
   {
     path: '/categories',

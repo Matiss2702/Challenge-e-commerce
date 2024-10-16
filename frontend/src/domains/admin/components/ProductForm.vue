@@ -25,7 +25,7 @@
       <div class="mb-2">
         <label for="price">Prix</label>
         <input 
-          type="number" 
+          type="float" 
           v-model="form.price" 
           id="price" 
           class="border rounded px-2 py-1 w-full" 
@@ -66,6 +66,16 @@
         <p v-if="errors.image" class="text-red-500">{{ errors.image }}</p>
       </div>
 
+      <!-- Ajout de la checkbox pour isAgeRestricted -->
+      <div class="mb-2">
+        <input 
+          type="checkbox" 
+          v-model="form.isAgeRestricted" 
+          id="isAgeRestricted" 
+        />
+        <label for="isAgeRestricted" class="ml-2">Produit restreint aux adultes (18+) ?</label>
+      </div>
+
       <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded">Sauvegarder</button>
       <button type="button" @click="$emit('cancel')" class="bg-gray-300 text-black px-4 py-2 rounded ml-2">Annuler</button>
     </form>
@@ -89,7 +99,8 @@ const form = ref({
   price: 0,
   category: '',
   stock: 0,
-  image: null
+  image: null,
+  isAgeRestricted: false
 });
 
 const errors = ref({
@@ -101,6 +112,7 @@ const errors = ref({
   image: ''
 });
 
+// Charger le produit si on est en mode édition
 watch(
   () => props.product,
   (newProduct) => {
@@ -111,6 +123,7 @@ watch(
   { immediate: true }
 );
 
+// Gérer l'upload d'image
 const handleImageUpload = (event) => {
   const file = event.target.files[0];
   if (file) {
@@ -118,6 +131,7 @@ const handleImageUpload = (event) => {
   }
 };
 
+// Validation du formulaire
 const validateForm = () => {
   errors.value = { name: '', description: '', price: '', category: '', stock: '', image: '' };
   let isValid = true;
@@ -140,6 +154,7 @@ const validateForm = () => {
   return isValid;
 };
 
+// Soumettre le formulaire
 const submitForm = () => {
   if (validateForm()) {
     const formData = new FormData();
@@ -153,8 +168,12 @@ const submitForm = () => {
       formData.append('image', form.value.image);
     }
 
+    // Assurez-vous que vous envoyez bien la valeur de `isAgeRestricted`
+    formData.append('isAgeRestricted', form.value.isAgeRestricted ? 'true' : 'false');
+
     emit('submit', formData);
   }
 };
+
 
 </script>

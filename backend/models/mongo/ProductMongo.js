@@ -30,6 +30,10 @@ const ProductSchema = new Schema({
     type: String,
     required: false,
   },
+  isAgeRestricted: {
+    type: Boolean,
+    default: false,
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('ProductMongo', ProductSchema);

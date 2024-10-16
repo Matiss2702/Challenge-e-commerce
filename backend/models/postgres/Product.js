@@ -17,7 +17,7 @@ module.exports = function(sequelize) {
       type: DataTypes.TEXT,
     },
     price: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.FLOAT,
       allowNull: false,
     },
     category: {
@@ -31,6 +31,11 @@ module.exports = function(sequelize) {
     imagePath: {
       type: DataTypes.STRING,
       allowNull: true,
+    },
+    isAgeRestricted: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
   }, {
     sequelize,

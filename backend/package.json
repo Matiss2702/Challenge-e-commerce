@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "migrate": "node migrations/migrate.js"
+    "migrate": "node migrations/migrate.js",
+    "migrateMongo": "node migrations/migrateMongoToPostgres.js"
   },
   "keywords": [],
   "author": "",
