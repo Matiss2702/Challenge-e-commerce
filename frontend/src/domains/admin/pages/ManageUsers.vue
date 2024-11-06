@@ -3,52 +3,59 @@
     <AdminSidebar />
 
     <div class="admin-content p-4">
-      <h1 class="text-2xl font-bold mb-4">Gestion des Utilisateurs</h1>
+      <h1 class="text-2xl font-bold mb-4">Gestion des Produits</h1>
 
       <button
         class="bg-blue-500 text-white px-4 py-2 rounded mb-4"
         @click="goToForm()"
       >
-        Ajouter un Utilisateur
+        Ajouter un Produit
       </button>
 
-      <Table>
-        <TableCaption>Liste des utilisateurs enregistrés</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nom</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Rôle</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow v-for="user in paginatedUsers" :key="user.postgresId">
-            <TableCell>{{ user.name }}</TableCell>
-            <TableCell>{{ user.email }}</TableCell>
-            <TableCell>{{ user.role }}</TableCell>
-            <TableCell>
-              <button
-                class="bg-yellow-500 text-white px-2 py-1 rounded mr-2"
-                @click="goToForm(user.postgresId)"
-              >
-                Modifier
-              </button>
-              <button
-                class="bg-red-500 text-white px-2 py-1 rounded"
-                @click="deleteUser(user.postgresId)"
-              >
-                Supprimer
-              </button>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-        <TableFooter v-if="paginatedUsers.length === 0">
-          <TableRow>
-            <TableCell colspan="4" class="text-center text-gray-500">Aucun utilisateur trouvé.</TableCell>
-          </TableRow>
-        </TableFooter>
-      </Table>
+      <!-- Conteneur scrollable pour le tableau -->
+      <div class="table-container overflow-x-auto">
+        <Table>
+          <TableCaption>Liste des produits enregistrés</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nom</TableHead>
+              <TableHead>Prix</TableHead>
+              <TableHead>Stock</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="product in paginatedProducts" :key="product.id">
+              <TableCell>{{ product.name }}</TableCell>
+              <TableCell>{{ product.price }} €</TableCell>
+              <TableCell>{{ product.stock }}</TableCell>
+              <TableCell>
+                <button
+                  class="text-yellow-500 mr-2"
+                  @click="goToForm(product.id)"
+                  aria-label="Modifier"
+                >
+                  <EditIcon class="w-6 h-6" />
+                </button>
+                <button
+                  class="text-red-500"
+                  @click="deleteProduct(product.id)"
+                  aria-label="Supprimer"
+                >
+                  <TrashIcon class="w-6 h-6" />
+                </button>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+          <TableFooter v-if="paginatedProducts.length === 0">
+            <TableRow>
+              <TableCell colspan="4" class="text-center text-gray-500">
+                Aucun produit trouvé.
+              </TableCell>
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </div>
 
       <!-- Pagination Controls -->
       <div class="pagination-controls">
@@ -67,14 +74,17 @@ import axios from 'axios';
 import Table from '@/components/ui/table/Table.vue';
 import AdminSidebar from '@/domains/navigation/components/TheAdminSidebar.vue';
 
-interface User {
-  postgresId: string;
+// Import des icônes de Lucide
+import { EditIcon, TrashIcon } from 'lucide-vue-next';
+
+interface Product {
+  id: string;
   name: string;
-  email: string;
-  role: string;
+  price: number;
+  stock: number;
 }
 
-const users = ref<User[]>([]);
+const products = ref<Product[]>([]);
 const currentPage = ref(1);
 const itemsPerPage = 10;
 
@@ -82,13 +92,13 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const router = useRouter();
 
 // Pagination logic
-const paginatedUsers = computed(() => {
+const paginatedProducts = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
   const end = start + itemsPerPage;
-  return users.value.slice(start, end);
+  return products.value.slice(start, end);
 });
 
-const totalPages = computed(() => Math.ceil(users.value.length / itemsPerPage));
+const totalPages = computed(() => Math.ceil(products.value.length / itemsPerPage));
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
@@ -102,62 +112,74 @@ const prevPage = () => {
   }
 };
 
-// Load users from the API
-const loadUsers = async () => {
+// Load products from the API
+const loadProducts = async () => {
   try {
     const token = localStorage.getItem('token');
-    const response = await axios.get(`${apiBaseUrl}/api/users`, {
+    const response = await axios.get(`${apiBaseUrl}/api/products`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
-    users.value = response.data.map((user: any) => ({
-      ...user,
-      postgresId: user.postgresId || user.id,
+    products.value = response.data.map((product: any) => ({
+      ...product,
+      id: product.id || product.postgresId,
     }));
   } catch (error) {
-    console.error('Erreur lors du chargement des utilisateurs :', error);
+    console.error('Erreur lors du chargement des produits :', error);
   }
 };
 
 // Navigation to add/edit form
 const goToForm = (id?: string) => {
   if (id) {
-    router.push({ name: 'admin-edit-user', params: { id } });
+    router.push({ name: 'admin-edit-product', params: { id } });
   } else {
-    router.push({ name: 'admin-add-user' });
+    router.push({ name: 'admin-add-product' });
   }
 };
 
-// Delete user method
-const deleteUser = async (userId: string) => {
+// Delete product method
+const deleteProduct = async (productId: string) => {
   try {
     const token = localStorage.getItem('token');
-    await axios.delete(`${apiBaseUrl}/api/users/${userId}`, {
+    await axios.delete(`${apiBaseUrl}/api/products/${productId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
-    users.value = users.value.filter((user) => user.postgresId !== userId);
+    products.value = products.value.filter((product) => product.id !== productId);
   } catch (error) {
-    console.error('Erreur lors de la suppression de l\'utilisateur :', error);
+    console.error('Erreur lors de la suppression du produit :', error);
   }
 };
 
 onMounted(() => {
-  loadUsers();
+  loadProducts();
 });
 </script>
 
 <style scoped>
 .admin-container {
   display: flex;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .admin-content {
   flex-grow: 1;
   padding: 20px;
+  width: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.table-container {
+  overflow-x: auto;
+  width: 100%;
 }
 
 .pagination-controls {
@@ -170,4 +192,9 @@ onMounted(() => {
 .pagination-controls button {
   margin: 0 10px;
 }
+
+table {
+  min-width: 600px;
+}
 </style>
+

@@ -6,7 +6,7 @@ import TheNavbar from '@/domains/navigation/components/TheNavbar.vue';
 <template>
 	<div class="min-h-screen flex flex-col">
 		<TheNavbar />
-		<main class="flex-1">
+		<main class="flex-1 mx-3">
 			<router-view></router-view>
 		</main>
 		<TheFooter />

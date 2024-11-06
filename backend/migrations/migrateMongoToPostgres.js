@@ -132,13 +132,17 @@ const migrateData = async () => {
     await sequelize.authenticate();
     console.log('PostgreSQL connected');
 
+    // Synchroniser les modèles Sequelize pour créer les tables si elles n'existent pas
+    await sequelize.sync({ force: true });
+    console.log('Tables PostgreSQL synchronisées');
+
     // Boucler sur tous les modèles MongoDB pour les migrer vers PostgreSQL
     for (const [modelName, mongoModel] of Object.entries(mongoModels)) {
       const postgresModelName = modelName.replace('Mongo', '');
       const postgresModel = postgresModels[postgresModelName];
 
       if (!postgresModel) {
-        console.log(`No corresponding PostgreSQL model for MongoDB model: ${modelName}`);
+        console.log(`Aucun modèle PostgreSQL correspondant pour le modèle MongoDB : ${modelName}`);
         continue;
       }
 
@@ -147,18 +151,18 @@ const migrateData = async () => {
       if (mapFunction) {
         await migrateCollection(mongoModel, postgresModel, mapFunction);
       } else {
-        console.error(`No mapping function defined for model: ${postgresModelName}`);
+        console.error(`Aucune fonction de mapping définie pour le modèle : ${postgresModelName}`);
       }
     }
 
-    console.log('All collections have been migrated to PostgreSQL successfully');
+    console.log('Toutes les collections ont été migrées vers PostgreSQL avec succès');
   } catch (err) {
-    console.error('Error migrating data:', err.message);
+    console.error('Erreur lors de la migration des données :', err.message);
   } finally {
     // Fermer les connexions
     await mongoose.disconnect();
     await sequelize.close();
-    console.log('Connections to MongoDB and PostgreSQL closed');
+    console.log('Connexions à MongoDB et PostgreSQL fermées');
   }
 };
 

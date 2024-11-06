@@ -9,10 +9,10 @@ const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const shippingRoutes = require('./routes/shippingRoutes');
-// const nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer');
+const session = require('express-session');
 
 dotenv.config();
-
 connectDB();
 
 const app = express();
@@ -28,6 +28,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/shipping', shippingRoutes);
 app.use('/uploads', express.static('uploads'));
 
+// Error handling
 app.use((req, res, next) => {
   res.status(404).json({ message: 'Route not found' });
 });
@@ -37,28 +38,30 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Server error' });
 });
 
+// Nodemailer transport setup
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD
+  }
+});
 
-// const transporter = nodemailer.createTransport({
-//   host: process.env.SMTP_HOST,
-//   port: process.env.SMTP_PORT,
-//   secure: false, 
-//   auth: {
-//       user: process.env.SMTP_USER,
-//       pass: process.env.SMTP_PASSWORD
-//   }
-// });
+// Attach the transporter to each request
+app.use((req, res, next) => {
+  req.transporter = transporter;
+  next();
+});
 
-// app.use((req, res, next) => {
-//   req.transporter = transporter;
-//   next();
-// });
-
-// app.use(session({
-//   secret: 'challenge4IWS2',
-//   resave: false,
-//   saveUninitialized: true,
-//   cookie: { secure: process.env.NODE_ENV === 'production' }
-// }));
+// Session setup
+app.use(session({
+  secret: 'challenge4IWS2',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: process.env.NODE_ENV === 'production' },
+}));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

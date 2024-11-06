@@ -10,5 +10,6 @@ router.get('/:id', authMiddleware, roleMiddleware('ROLE_ADMIN'), userController.
 router.post('/', authMiddleware, roleMiddleware('ROLE_ADMIN'), userController.createUser);
 router.put('/:id', authMiddleware, roleMiddleware('ROLE_ADMIN'), userController.updateUser);
 router.delete('/:id', authMiddleware, roleMiddleware('ROLE_ADMIN'), userController.deleteUser);
+router.put('/profile/:id', authMiddleware, userController.updateProfile);
 
 module.exports = router;

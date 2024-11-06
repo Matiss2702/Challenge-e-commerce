@@ -31,6 +31,11 @@ module.exports = (sequelize) => {
       allowNull: false,
       defaultValue: 'ROLE_USER',
     },
+    isVerified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
+    },
   }, {
     sequelize,
     modelName: 'User',

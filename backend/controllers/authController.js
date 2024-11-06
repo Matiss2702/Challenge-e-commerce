@@ -4,6 +4,7 @@ const sequelize = require('../config/sequelize');
 const User = require('../models/postgres/User')(sequelize);
 const UserMongo = require('../models/mongo/UserMongo');
 const userSchema = require('../schemas/userSchema');
+const { sendEmail } = require('../services/mailService');
 
 exports.register = async (req, res) => {
   try {
@@ -61,6 +62,19 @@ exports.register = async (req, res) => {
     await newUserMongo.save();
     console.log(`User created in MongoDB with ID: ${newUserMongo._id}`);
 
+    // Envoi de l'email de confirmation après la création de l'utilisateur
+    const emailContent = `
+      <h1>Bienvenue ${name} !</h1>
+      <p>Merci de vous être inscrit. Nous sommes ravis de vous accueillir.</p>
+    `;
+
+    try {
+      await sendEmail(email, 'Bienvenue chez nous !', emailContent);
+      console.log(`Email de confirmation envoyé à: ${email}`);
+    } catch (error) {
+      console.error(`Erreur lors de l'envoi de l'email à ${email}:`, error);
+    }
+
     const payload = {
       user: {
         id: newUserMongo._id.toString(),
@@ -111,7 +125,6 @@ exports.login = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, userMongo.password);
     if (!isMatch) {
-      console.log(`Invalid credentials for user: ${email}`);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 

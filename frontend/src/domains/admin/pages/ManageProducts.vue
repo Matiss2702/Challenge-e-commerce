@@ -10,38 +10,40 @@
       <!-- Affichage du message de chargement -->
       <p v-if="loading" class="text-center text-gray-500">Chargement des produits...</p>
 
-      <!-- Table des produits -->
-      <Table v-if="!loading && products.length">
-        <TableCaption>Liste des produits</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nom</TableHead>
-            <TableHead>Prix</TableHead>
-            <TableHead>Stock</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow v-for="product in paginatedProducts" :key="product.postgresId">
-            <TableCell>{{ product.name }}</TableCell>
-            <TableCell>{{ product.price }} €</TableCell>
-            <TableCell>{{ product.stock }}</TableCell>
-            <TableCell>
-              <button class="bg-yellow-500 text-white px-2 py-1 rounded mr-2" @click="goToForm(product.postgresId)">
-                Modifier
-              </button>
-              <button class="bg-red-500 text-white px-2 py-1 rounded" @click="deleteProduct(product.postgresId)">
-                Supprimer
-              </button>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-        <TableFooter v-if="paginatedProducts.length === 0">
-          <TableRow>
-            <TableCell colspan="4" class="text-center text-gray-500">Aucun produit trouvé.</TableCell>
-          </TableRow>
-        </TableFooter>
-      </Table>
+      <!-- Table des produits avec icônes -->
+      <div class="table-container overflow-x-auto">
+        <Table v-if="!loading && products.length">
+          <TableCaption>Liste des produits</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nom</TableHead>
+              <TableHead>Prix</TableHead>
+              <TableHead>Stock</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="product in paginatedProducts" :key="product.postgresId">
+              <TableCell>{{ product.name }}</TableCell>
+              <TableCell>{{ product.price }} €</TableCell>
+              <TableCell>{{ product.stock }}</TableCell>
+              <TableCell>
+                <button class="text-yellow-500 mr-2" @click="goToForm(product.postgresId)" aria-label="Modifier">
+                  <EditIcon class="w-6 h-6" />
+                </button>
+                <button class="text-red-500" @click="deleteProduct(product.postgresId)" aria-label="Supprimer">
+                  <TrashIcon class="w-6 h-6" />
+                </button>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+          <TableFooter v-if="paginatedProducts.length === 0">
+            <TableRow>
+              <TableCell colspan="4" class="text-center text-gray-500">Aucun produit trouvé.</TableCell>
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </div>
 
       <!-- Pagination Controls -->
       <div v-if="totalPages > 1" class="pagination-controls">
@@ -56,13 +58,15 @@
   </div>
 </template>
 
-
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import Table from '@/components/ui/table/Table.vue';
 import AdminSidebar from '@/domains/navigation/components/TheAdminSidebar.vue';
+
+// Import des icônes de Lucide
+import { EditIcon, TrashIcon } from 'lucide-vue-next';
 
 interface Product {
   postgresId: string;
@@ -151,11 +155,19 @@ onMounted(() => {
 <style scoped>
 .admin-container {
   display: flex;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .admin-content {
   flex-grow: 1;
   padding: 20px;
+  width: 100%;
+}
+
+.table-container {
+  overflow-x: auto;
+  width: 100%;
 }
 
 .pagination-controls {
@@ -173,5 +185,8 @@ button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-</style>
 
+body {
+  overflow-x: hidden;
+}
+</style>

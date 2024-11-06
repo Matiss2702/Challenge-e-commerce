@@ -125,6 +125,71 @@ exports.updateUser = async (req, res) => {
   }
 };
 
+exports.updateProfile = async (req, res) => {
+  try {
+    const postgresId = req.params.id;
+    const { name, birthdate, email, currentPassword, newPassword } = req.body;
+
+    // Trouver l'utilisateur dans PostgreSQL
+    const userPostgres = await UserPostgres.findByPk(postgresId);
+    if (!userPostgres) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé dans PostgreSQL' });
+    }
+
+    // Logique de modification du mot de passe (facultatif)
+    if (currentPassword && newPassword) {
+      const isMatch = await bcrypt.compare(currentPassword, userPostgres.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Ancien mot de passe incorrect' });
+      }
+
+      // Générer un nouveau hachage pour le nouveau mot de passe
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+      // Mettre à jour le mot de passe dans PostgreSQL
+      userPostgres.password = hashedPassword;
+      
+    }
+
+    // Mettre à jour les autres champs dans PostgreSQL
+    userPostgres.name = name;
+    userPostgres.birthdate = birthdate;
+    userPostgres.email = email;
+
+    await userPostgres.save();
+
+    // Trouver et mettre à jour l'utilisateur dans MongoDB
+    const userMongo = await UserMongo.findOne({ postgresId: userPostgres.id });
+    if (!userMongo) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé dans MongoDB' });
+    }
+
+    // Mettre à jour les champs correspondants dans MongoDB
+    userMongo.name = name;
+    userMongo.birthdate = birthdate;
+    userMongo.email = email;
+
+    // Si le mot de passe a été modifié, le mettre à jour dans MongoDB aussi
+    if (currentPassword && newPassword) {
+      userMongo.password = userPostgres.password;
+      console.log("Nouveau mot de passe haché:", userPostgres.password);
+      console.log("Mot de passe sauvegardé dans MongoDB:", userMongo.password);
+    }
+
+    // Sauvegarder les modifications dans MongoDB
+    await userMongo.save();
+
+    // Retourner les données mises à jour
+    res.json({
+      postgresData: userPostgres,
+      mongoData: userMongo,
+    });
+  } catch (err) {
+    console.error('Erreur lors de la mise à jour du profil:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
 
 exports.deleteUser = async (req, res) => {
   try {

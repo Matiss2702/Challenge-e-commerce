@@ -2,7 +2,7 @@ const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
+  port: parseInt(process.env.SMTP_PORT, 10),
   secure: false,
   auth: {
     user: process.env.SMTP_USER,
@@ -10,20 +10,30 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Vérification de la connexion SMTP
+transporter.verify((error, success) => {
+  if (error) {
+    console.log('Erreur de connexion SMTP:', error);
+  } else {
+    console.log('Connexion SMTP réussie et prête pour l\'envoi d\'emails');
+  }
+});
+
+// Fonction pour envoyer un email
 const sendEmail = async (to, subject, htmlContent) => {
   const mailOptions = {
-    from: process.env.SMTP_USER,
+    from: `"Votre Application" <${process.env.SMTP_USER}>`,
     to: to,
     subject: subject,
     html: htmlContent
   };
 
- try {
+  try {
     const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully:', info);
+    console.log('Email envoyé avec succès:', info);
     return info;
   } catch (error) {
-    console.error('Failed to send email:', error);
+    console.error('Échec de l\'envoi de l\'email:', error);
     throw error;
   }
 };

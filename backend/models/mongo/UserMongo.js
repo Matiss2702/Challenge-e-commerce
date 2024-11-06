@@ -29,6 +29,10 @@ const UserSchema = new Schema({
     enum: ['ROLE_USER', 'ROLE_STORE_KEEPER', 'ROLE_ADMIN', 'ROLE_COMPTA'],
     default: 'ROLE_USER',
   },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('UserMongo', UserSchema);

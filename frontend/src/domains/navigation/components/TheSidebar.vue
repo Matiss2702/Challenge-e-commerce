@@ -1,8 +1,8 @@
-
 <template>
   <aside class="w-64 bg-white p-4 shadow-lg h-full">
     <div class="mb-4">
       <input
+        v-model="searchTerm"
         type="text"
         placeholder="Rechercher un produit..."
         class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-300"
@@ -15,7 +15,7 @@
         <AccordionTrigger>Catégories</AccordionTrigger>
         <AccordionContent>
           <ul>
-            <li v-for="category in categories" :key="category as string">
+            <li v-for="category in filteredCategories" :key="category as string">
               <a 
                 href="#" 
                 class="text-gray-700 hover:text-blue-500 transition-colors duration-200"
@@ -78,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 
 // Déclaration des props avec typage explicite
@@ -90,8 +90,16 @@ const props = defineProps<{
 const emit = defineEmits(['filter-category', 'filter-price', 'filter-alcohol', 'filter-stock']);
 
 // Variables locales
+const searchTerm = ref('');
 const currentPrice = ref(100);
 const selectedCategories = ref<string[]>([]);
+
+// Méthode pour filtrer les catégories selon la recherche
+const filteredCategories = computed(() => {
+  return props.categories.filter(category =>
+    category.toLowerCase().includes(searchTerm.value.toLowerCase())
+  );
+});
 
 // Fonction pour gérer le changement de catégorie
 const toggleCategory = (category: string) => {
@@ -104,8 +112,6 @@ const toggleCategory = (category: string) => {
   emit('filter-category', [...selectedCategories.value]);
 };
 </script>
-
-
 
 <style scoped>
 aside {
