@@ -1,56 +1,58 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const sequelize = require('../config/sequelize');
-const User = require('../models/postgres/User')(sequelize);
-const UserMongo = require('../models/mongo/UserMongo');
-const userSchema = require('../schemas/userSchema');
-const { sendEmail } = require('../services/mailService');
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const sequelize = require("../config/sequelize");
+const User = require("../models/postgres/User")(sequelize);
+const UserMongo = require("../models/mongo/UserMongo");
+const userSchema = require("../schemas/userSchema");
+const { sendEmail } = require("../services/mailService");
+const dotenv = require("dotenv");
 
+dotenv.config();
+
+// Variables d'environnement
+const FRONTEND_URL = process.env.FRONTEND_URL;
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Enregistrement d'utilisateur
 exports.register = async (req, res) => {
   try {
-    console.log('Starting registration process');
-
     const validation = userSchema.safeParse(req.body);
     if (!validation.success) {
-      console.log('Validation error:', validation.error.errors);
       return res.status(400).json({ errors: validation.error.errors });
     }
 
     const { name, birthdate, email, password, role } = validation.data;
-    console.log(`Received data - Name: ${name}, Birthdate: ${birthdate}, Email: ${email}, Role: ${role}`);
-
     const parsedBirthdate = new Date(birthdate);
     if (isNaN(parsedBirthdate.getTime())) {
-      console.error('Invalid birthdate format');
-      return res.status(400).json({ message: 'Invalid birthdate format' });
+      return res.status(400).json({ message: "Invalid birthdate format" });
     }
 
+    // Vérifier les doublons
     let user = await User.findOne({ where: { email } });
     if (user) {
-      console.log(`User already exists in PostgreSQL: ${email}`);
       return res.status(400).json({ message: "User already exists" });
     }
 
     const userMongo = await UserMongo.findOne({ email });
     if (userMongo) {
-      console.log(`User already exists in MongoDB: ${email}`);
       return res.status(400).json({ message: "User already exists" });
     }
 
+    // Hashage du mot de passe
     const salt = await bcrypt.genSalt(10);
-    console.log('Salt generated successfully');
     const hashedPassword = await bcrypt.hash(password, salt);
-    console.log('Password hashed successfully');
 
+    // Créer l'utilisateur dans PostgreSQL
     user = await User.create({
       name,
       birthdate: parsedBirthdate,
       email,
       password: hashedPassword,
       role,
+      isVerified: false,
     });
-    console.log(`User created in PostgreSQL: ${user.id}`);
 
+    // Créer l'utilisateur dans MongoDB
     const newUserMongo = new UserMongo({
       postgresId: user.id,
       name,
@@ -58,118 +60,126 @@ exports.register = async (req, res) => {
       email,
       password: hashedPassword,
       role,
+      isVerified: false,
     });
     await newUserMongo.save();
-    console.log(`User created in MongoDB with ID: ${newUserMongo._id}`);
 
-    // Envoi de l'email de confirmation après la création de l'utilisateur
+    // Générer le token de vérification
+    const token = jwt.sign({ id: newUserMongo._id }, JWT_SECRET, { expiresIn: "1d" });
+    const verificationLink = `${FRONTEND_URL}/verify-account?token=${token}`;
+    console.log("Verification link:", verificationLink);
+
+    // Envoi de l'email
     const emailContent = `
       <h1>Bienvenue ${name} !</h1>
-      <p>Merci de vous être inscrit. Nous sommes ravis de vous accueillir.</p>
+      <p>Merci de vous être inscrit. Cliquez sur le lien suivant pour vérifier votre compte :</p>
+      <a href="${verificationLink}">Vérifier mon compte</a>
     `;
 
-    try {
-      await sendEmail(email, 'Bienvenue chez nous !', emailContent);
-      console.log(`Email de confirmation envoyé à: ${email}`);
-    } catch (error) {
-      console.error(`Erreur lors de l'envoi de l'email à ${email}:`, error);
-    }
+    await sendEmail(email, "Bienvenue chez nous !", emailContent);
 
-    const payload = {
-      user: {
-        id: newUserMongo._id.toString(),
-        role: user.role,
-        birthdate: user.birthdate
-      },
-    };
-
-    console.log('Creating JWT token');
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: '1h',
-    });
-    console.log('Token generated successfully');
-
-    res.status(201).json({ token });
-    console.log('Response sent successfully');
+    res.status(201).json({ message: "User registered successfully. Please verify your email." });
   } catch (err) {
-    if (err.code === 11000) {
-      console.error('Duplicate email error:', err.keyValue.email);
-      return res.status(400).json({ message: `User with email ${err.keyValue.email} already exists` });
-    }
     console.error(`Error during user registration: ${err.message}`, err);
     res.status(500).json({ message: "Server error" });
   }
 };
 
+// Connexion
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-  console.log(`Attempting login for user: ${email}`);
-  console.log('Login function called at:', new Date().toISOString());
 
   if (!email || !password) {
-    console.log('Email or password not provided');
-    return res.status(400).json({ message: 'Email and password are required' });
+    return res.status(400).json({ message: "Email and password are required" });
   }
 
   try {
-    let userMongo = await UserMongo.findOne({ email });
+    const userMongo = await UserMongo.findOne({ email });
     if (!userMongo) {
-      console.log(`User not found in MongoDB: ${email}`);
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    if (!userMongo.password) {
-      console.log('User password is undefined');
-      return res.status(500).json({ message: 'Server error: user data is incomplete' });
+    // Vérifier si le compte est validé
+    if (!userMongo.isVerified) {
+      const token = jwt.sign({ id: userMongo._id }, JWT_SECRET, { expiresIn: "1d" });
+      const verificationLink = `${FRONTEND_URL}/verify-account?token=${token}`;
+      const emailContent = `
+        <h1>Votre compte n'est pas vérifié</h1>
+        <p>Veuillez cliquer sur le lien suivant pour vérifier votre compte :</p>
+        <a href="${verificationLink}">Vérifier mon compte</a>
+      `;
+
+      await sendEmail(email, "Vérification de compte requise", emailContent);
+      return res.status(403).json({ message: "Account not verified. A verification email has been sent." });
     }
 
+    // Vérifier le mot de passe
     const isMatch = await bcrypt.compare(password, userMongo.password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    const payload = {
-      user: {
-        id: userMongo._id.toString(),
-        role: userMongo.role,
-        birthdate: userMongo.birthdate
-      },
-    };
+    // Générer un token JWT
+    const payload = { id: userMongo._id.toString(), role: userMongo.role };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
 
-    if (!process.env.JWT_SECRET) {
-      console.error('JWT secret is not defined in environment variables');
-      return res.status(500).json({ message: 'Server configuration error' });
-    }
-
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: '1h',
-    });
-
-    console.log('Generated token:', token);
     res.json({ token });
   } catch (err) {
     console.error(`Error during login: ${err.message}`, err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-
-exports.getMe = async (req, res) => {
+// Vérification de compte
+exports.verifyAccount = async (req, res) => {
   try {
-    console.log(`Fetching user info for ID: ${req.user.id}`);
-
-    const user = await UserMongo.findById(req.user.id).select('-password');
-    if (!user) {
-      console.log(`User not found for ID: ${req.user.id}`);
-      return res.status(404).json({ message: 'User not found' });
+    const { token } = req.query;
+    if (!token) {
+      return res.status(400).json({ message: "Token is required" });
     }
 
-    console.log(`User info retrieved for ID: ${req.user.id}`);
-    res.json(user);
+    console.log("Received token:", token);
+
+    // Décoder le token
+    const decoded = jwt.verify(token, JWT_SECRET);
+    console.log("Decoded token:", decoded);
+
+    const user = await UserMongo.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Vérifier si le compte est déjà validé
+    if (user.isVerified) {
+      return res.status(400).json({ message: "Account already verified" });
+    }
+
+    // Mettre à jour les statuts de vérification
+    user.isVerified = true;
+    await user.save();
+
+    await User.update({ isVerified: true }, { where: { id: user.postgresId } });
+
+    res.status(200).json({ message: "Account verified successfully" });
   } catch (err) {
-    console.error(`Error fetching user info: ${err.message}`);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error verifying token:", err);
+    if (err.name === "JsonWebTokenError") {
+      return res.status(400).json({ message: "Invalid or malformed token" });
+    }
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-
+// Récupération des informations utilisateur
+exports.getMe = async (req, res) => {
+  try {
+    const user = await UserMongo.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (err) {
+    console.error(`Error fetching user info: ${err.message}`, err);
+    res.status(500).json({ message: "Server error" });
+  }
+};

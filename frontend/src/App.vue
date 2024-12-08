@@ -1,6 +1,10 @@
 <template>
-  <router-view />
+  <div id="app">
+    <router-view />
+    <Toaster />
+  </div>
 </template>
 
-<script setup></script>
-<style scoped></style>
+<script setup>
+import Toaster from "./components/ui/toast/Toaster.vue";
+</script>

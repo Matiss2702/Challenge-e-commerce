@@ -1,22 +1,16 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import homeRoutes from '@/domains/home/router';
-import adminRoutes from '@/domains/admin/router';
-import authRoutes from '@/domains/auth/router';
-import productRoutes from '@/domains/product/router';
-import userRoutes from '@/domains/user/router';
-import { useAuthStore } from '@/stores/authStore';
+import { createRouter, createWebHistory } from "vue-router";
+import homeRoutes from "@/domains/home/router";
+import adminRoutes from "@/domains/admin/router";
+import authRoutes from "@/domains/auth/router";
+import productRoutes from "@/domains/product/router";
+import userRoutes from "@/domains/user/router";
+import { useAuthStore } from "@/stores/authStore";
 
 const routes = [
   {
-    path: '/',
-    component: () => import('@/layouts/BaseLayout.vue'),
-    children: [
-      ...homeRoutes(),
-      ...adminRoutes(),
-      ...authRoutes(),
-      ...productRoutes(),
-      ...userRoutes(),
-    ],
+    path: "/",
+    component: () => import("@/layouts/BaseLayout.vue"),
+    children: [...homeRoutes(), ...adminRoutes(), ...authRoutes(), ...productRoutes(), ...userRoutes()],
   },
 ];
 
@@ -28,22 +22,26 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
-  console.log('Navigating to:', to.name, 'with params:', to.params);
+  console.log("Navigating to:", to.name, "with params:", to.params);
+  console.log("Auth Store State:", authStore.isAuthenticated, authStore.user);
 
-  if (!authStore.user && authStore.token) {
-    await authStore.verifyTokenAndRole();
-  }
+  const publicRoutes = ["verify-account", "auth"];
 
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    return next({ name: 'auth-login' });
-  }
+  if (!publicRoutes.includes(to.name as string)) {
+    if (!authStore.user && authStore.token) {
+      await authStore.verifyTokenAndRole();
+    }
 
-  if (to.meta.requiredRole && !authStore.hasRole(to.meta.requiredRole as string)) {
-    return next({ name: 'forbidden' });
+    if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+      return next({ name: "auth-login" });
+    }
+
+    if (to.meta.requiredRole && !authStore.hasRole(to.meta.requiredRole as string)) {
+      return next({ name: "forbidden" });
+    }
   }
 
   return next();
 });
-
 
 export default router;

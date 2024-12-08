@@ -1,99 +1,156 @@
-import { defineStore } from 'pinia';
-import axios from 'axios';
-import router from '@/router';
+import { defineStore } from "pinia";
+import axios from "axios";
+import router from "@/router";
+import { toast } from "../components/ui/toast/use-toast";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
-export const useAuthStore = defineStore('auth', {
+export const useAuthStore = defineStore("auth", {
   state: () => ({
-    token: localStorage.getItem('token') || '',
+    token: localStorage.getItem("token") || "",
     user: null as any | null,
     isLoadingUser: false,
   }),
 
   actions: {
-    // Action de connexion
-    async login(credentials: { email: string, password: string }) {
+    // Action for login
+    async login(credentials: { email: string; password: string }) {
       try {
-        // Effectuer l'appel API vers le point de connexion
         const response = await axios.post(`${apiBaseUrl}/api/auth/login`, credentials);
 
-        // Stocker le token reçu et le sauvegarder dans le localStorage
+        // Store token and fetch user details
         this.token = response.data.token;
-        localStorage.setItem('token', this.token);
+        localStorage.setItem("token", this.token);
 
-        // Récupérer les détails de l'utilisateur après la connexion
         await this.fetchUser();
-        router.push('/profile');
-      } catch (error) {
-        console.error('Erreur lors de la connexion:', error);
-        throw new Error('Échec de la connexion. Veuillez vérifier vos identifiants.');
+        toast({
+          title: "Connexion réussie",
+          description: "Vous êtes maintenant connecté.",
+          variant: "default",
+        });
+
+        router.push("/profile");
+      } catch (error: any) {
+        console.error("Erreur lors de la connexion:", error);
+
+        toast({
+          title: "Erreur de connexion",
+          description: error.response?.data?.message || "Impossible de se connecter. Veuillez réessayer.",
+          variant: "destructive",
+        });
+
+        throw new Error("Échec de la connexion.");
       }
     },
 
-    // Action d'inscription
-    async register(data: { name: string, birthdate: string, email: string, password: string }) {
+    // Action for register
+    async register(data: { name: string; birthdate: string; email: string; password: string }) {
       try {
-        // Effectuer l'appel API vers le point d'inscription
-        const response = await axios.post(`${apiBaseUrl}/api/auth/register`, data);
+        await axios.post(`${apiBaseUrl}/api/auth/register`, data);
 
-        // Stocker le token reçu et le sauvegarder dans le localStorage
-        this.token = response.data.token;
-        localStorage.setItem('token', this.token);
+        toast({
+          title: "Inscription réussie",
+          description: "Veuillez vérifier votre email pour confirmer votre compte.",
+          variant: "default",
+        });
 
-        // Récupérer les détails de l'utilisateur après l'inscription
-        await this.fetchUser();
-        router.push('/profile');
-      } catch (error) {
+        router.push("/check-email");
+      } catch (error: any) {
         console.error("Erreur lors de l'inscription:", error);
-        throw new Error("Échec de l'inscription. Veuillez réessayer.");
+
+        toast({
+          title: "Erreur d'inscription",
+          description: error.response?.data?.message || "L'inscription a échoué. Veuillez réessayer.",
+          variant: "destructive",
+        });
+
+        throw new Error("Échec de l'inscription.");
       }
     },
 
-    // Récupérer les détails de l'utilisateur en fonction du token
+    // Fetch user details
     async fetchUser() {
       if (!this.token) return;
 
       this.isLoadingUser = true;
       try {
-        // Effectuer l'appel API pour récupérer les informations de l'utilisateur
         const response = await axios.get(`${apiBaseUrl}/api/auth/me`, {
           headers: { Authorization: `Bearer ${this.token}` },
         });
         this.user = response.data;
-      } catch (error) {
-        console.error('Erreur lors de la récupération des informations utilisateur:', error);
+      } catch (error: any) {
+        console.error("Erreur lors de la récupération des informations utilisateur:", error);
+
+        toast({
+          title: "Erreur",
+          description: "Impossible de récupérer les informations utilisateur.",
+          variant: "destructive",
+        });
+
         this.logout();
       } finally {
         this.isLoadingUser = false;
       }
     },
 
-    // Vérifier le token et le rôle, utilisé pour valider si l'utilisateur a une autorisation adéquate
-    async verifyTokenAndRole() {
-      if (this.token) {
+    // Vérification du token et du rôle utilisateur
+    async verifyTokenAndRole(requiredRole?: string) {
+      if (!this.token) {
+        toast({
+          title: "Erreur",
+          description: "Vous n'êtes pas connecté.",
+          variant: "destructive",
+        });
+        router.push("/auth/login");
+        return false;
+      }
+
+      try {
+        // Vérifie et récupère l'utilisateur
         await this.fetchUser();
+
+        if (requiredRole && this.user?.role !== requiredRole) {
+          toast({
+            title: "Accès refusé",
+            description: "Vous n'avez pas les autorisations nécessaires pour accéder à cette page.",
+            variant: "destructive",
+          });
+          router.push("/forbidden");
+          return false;
+        }
+
+        return true;
+      } catch (error: any) {
+        console.error("Erreur lors de la vérification du rôle:", error);
+
+        toast({
+          title: "Erreur",
+          description: "Impossible de vérifier votre rôle. Veuillez réessayer.",
+          variant: "destructive",
+        });
+
+        return false;
       }
     },
 
-    // Action de déconnexion
+    // Logout action
     logout() {
-      // Effacer le token et les détails de l'utilisateur de l'état et du localStorage
-      this.token = '';
+      this.token = "";
       this.user = null;
-      localStorage.removeItem('token');
-      router.push('/');
+      localStorage.removeItem("token");
+
+      toast({
+        title: "Déconnexion réussie",
+        description: "Vous avez été déconnecté avec succès.",
+        variant: "default",
+      });
+
+      router.push("/");
     },
   },
 
   getters: {
-    // Vérifier si l'utilisateur est authentifié en fonction du token et des données utilisateur
     isAuthenticated: (state) => !!state.token && !!state.user,
-
-    // Vérifier si l'utilisateur a un rôle spécifique
-    hasRole: (state) => (role: string) => {
-      console.log('Vérification du rôle utilisateur:', state.user?.role);
-      return state.user?.role === role;
-    },
+    hasRole: (state) => (role: string) => state.user?.role === role,
   },
 });

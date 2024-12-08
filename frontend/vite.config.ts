@@ -18,5 +18,13 @@ export default defineConfig({
 	},
 	server: {
 		host: "0.0.0.0",
+		port: 8000, // Assurez-vous que le port ne rentre pas en conflit avec d'autres applications
+		proxy: {
+			'/api': {
+				target: 'http://localhost:3000', // URL de votre API backend
+				changeOrigin: true,
+				secure: false,
+			},
+		},
 	}
-})
+});

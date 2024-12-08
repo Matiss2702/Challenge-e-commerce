@@ -1,16 +1,19 @@
-const mongoose = require('mongoose');
-const { sequelize } = require('../models/postgres');
-const fs = require('fs');
-const path = require('path');
+const dotenv = require("dotenv");
+dotenv.config();
+
+const mongoose = require("mongoose");
+const { sequelize } = require("../models/postgres");
+const fs = require("fs");
+const path = require("path");
 
 // Fonction pour charger dynamiquement tous les modèles MongoDB
 const loadMongoModels = () => {
   const mongoModels = {};
-  const mongoModelsPath = path.join(__dirname, '../models/mongo');
-  fs.readdirSync(mongoModelsPath).forEach(file => {
-    if (file.endsWith('.js')) {
+  const mongoModelsPath = path.join(__dirname, "../models/mongo");
+  fs.readdirSync(mongoModelsPath).forEach((file) => {
+    if (file.endsWith(".js")) {
       const model = require(path.join(mongoModelsPath, file));
-      const modelName = path.basename(file, '.js');
+      const modelName = path.basename(file, ".js");
       mongoModels[modelName] = model;
     }
   });
@@ -20,14 +23,14 @@ const loadMongoModels = () => {
 // Fonction pour charger dynamiquement tous les modèles PostgreSQL
 const loadPostgresModels = (sequelize) => {
   const postgresModels = {};
-  const postgresModelsPath = path.join(__dirname, '../models/postgres');
+  const postgresModelsPath = path.join(__dirname, "../models/postgres");
 
-  fs.readdirSync(postgresModelsPath).forEach(file => {
-    if (file.endsWith('.js') && file !== 'index.js') {
+  fs.readdirSync(postgresModelsPath).forEach((file) => {
+    if (file.endsWith(".js") && file !== "index.js") {
       const modelFile = require(path.join(postgresModelsPath, file));
 
-      if (typeof modelFile === 'function') {
-        const modelName = path.basename(file, '.js');
+      if (typeof modelFile === "function") {
+        const modelName = path.basename(file, ".js");
         postgresModels[modelName] = modelFile(sequelize);
       } else {
         console.error(`Le fichier ${file} n'exporte pas une fonction de modèle Sequelize.`);
@@ -63,7 +66,7 @@ const mapUserData = (mongoUser) => ({
   id: mongoUser.postgresId,
   email: mongoUser.email,
   password: mongoUser.password,
-  name: mongoUser.name || 'default_name',
+  name: mongoUser.name || "default_name",
   birthdate: mongoUser.birthdate || new Date(),
   role: mongoUser.role,
 });
@@ -106,10 +109,8 @@ const migrateCollection = async (mongoModel, postgresModel, mapDataFn) => {
     const mongoData = await mongoModel.find();
 
     for (const document of mongoData) {
-      // Mapper les données de MongoDB vers PostgreSQL
       const postgresData = mapDataFn(document);
 
-      // Insérer dans PostgreSQL
       await postgresModel.create(postgresData);
       console.log(`Migrated document with ID ${document._id} to PostgreSQL`);
     }
@@ -121,24 +122,25 @@ const migrateCollection = async (mongoModel, postgresModel, mapDataFn) => {
 // Script de migration global
 const migrateData = async () => {
   try {
-    // Connexion à MongoDB
-    await mongoose.connect(process.env.MONGO_URL, {
+    const mongoUrl = process.env.MONGO_URI;
+    if (!mongoUrl) {
+      throw new Error("MONGO_URI is not defined in the environment variables.");
+    }
+    await mongoose.connect(mongoUrl, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log('MongoDB connected');
+    console.log("MongoDB connected");
 
-    // Connexion à PostgreSQL
     await sequelize.authenticate();
-    console.log('PostgreSQL connected');
+    console.log("PostgreSQL connected");
 
-    // Synchroniser les modèles Sequelize pour créer les tables si elles n'existent pas
     await sequelize.sync({ force: true });
-    console.log('Tables PostgreSQL synchronisées');
+    console.log("Tables PostgreSQL synchronisées");
 
     // Boucler sur tous les modèles MongoDB pour les migrer vers PostgreSQL
     for (const [modelName, mongoModel] of Object.entries(mongoModels)) {
-      const postgresModelName = modelName.replace('Mongo', '');
+      const postgresModelName = modelName.replace("Mongo", "");
       const postgresModel = postgresModels[postgresModelName];
 
       if (!postgresModel) {
@@ -146,7 +148,6 @@ const migrateData = async () => {
         continue;
       }
 
-      // Trouver la fonction de mapping correspondante
       const mapFunction = mappingFunctions[postgresModelName];
       if (mapFunction) {
         await migrateCollection(mongoModel, postgresModel, mapFunction);
@@ -155,14 +156,17 @@ const migrateData = async () => {
       }
     }
 
-    console.log('Toutes les collections ont été migrées vers PostgreSQL avec succès');
+    console.log("Toutes les collections ont été migrées vers PostgreSQL avec succès");
   } catch (err) {
-    console.error('Erreur lors de la migration des données :', err.message);
+    console.error("Erreur lors de la migration des données :", err.message);
   } finally {
-    // Fermer les connexions
-    await mongoose.disconnect();
-    await sequelize.close();
-    console.log('Connexions à MongoDB et PostgreSQL fermées');
+    try {
+      await mongoose.disconnect();
+      await sequelize.close();
+      console.log("Connexions à MongoDB et PostgreSQL fermées");
+    } catch (closeErr) {
+      console.error("Erreur lors de la fermeture des connexions :", closeErr.message);
+    }
   }
 };
 
