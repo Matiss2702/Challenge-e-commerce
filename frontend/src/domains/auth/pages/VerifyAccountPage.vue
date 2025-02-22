@@ -25,7 +25,7 @@ onMounted(async () => {
       message.value = response.data.message;
 
       setTimeout(() => {
-        router.push("/login");
+        router.push("/auth");
       }, 3000);
     } catch (error: any) {
       console.error("Erreur de vérification:", error);

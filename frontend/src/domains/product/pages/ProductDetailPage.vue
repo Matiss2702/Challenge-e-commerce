@@ -1,29 +1,37 @@
 <template>
-  <div v-if="product" class="max-w-4xl mx-auto py-8 px-4">
+  <div v-if="product" class="max-w-4xl px-4 py-8 mx-auto">
     <!-- Affichage de l'image du produit -->
-    <div class="flex flex-col md:flex-row items-center md:items-start">
-      <img :src="product.image" :alt="product.name" class="w-full md:w-1/2 rounded-lg mb-4 md:mb-0 md:mr-8 object-cover" />
+    <div class="flex flex-col items-center md:flex-row md:items-start">
+      <img
+        :src="product.image"
+        :alt="product.name"
+        class="object-cover w-full mb-4 rounded-lg md:w-1/2 md:mb-0 md:mr-8"
+      />
 
       <!-- Détails du produit -->
       <div class="flex-grow">
-        <h1 class="text-3xl font-bold mb-4">{{ product.name }}</h1>
-        <p class="text-gray-700 mb-2">{{ product.category }}</p>
-        <p class="text-green-600 mb-2">{{ product.description }}</p>
-        <p class="text-gray-500 mb-2">{{ product.price }} €</p>
+        <h1 class="mb-4 text-3xl font-bold">{{ product.name }}</h1>
+        <p class="mb-2 text-gray-700">{{ product.category }}</p>
+        <p class="mb-2 text-green-600">{{ product.description }}</p>
+        <p class="mb-2 text-gray-500">{{ product.price }} €</p>
         <div class="flex items-center mb-2">
           <span class="text-yellow-500">★★★★★</span>
-          <span class="ml-2 text-gray-600 text-sm">(11832 avis vérifiés)</span>
+          <span class="ml-2 text-sm text-gray-600">(11832 avis vérifiés)</span>
         </div>
 
         <!-- Contrôle de la quantité -->
         <div class="flex items-center mb-4">
-          <button @click="decreaseQuantity" class="bg-yellow-500 hover:bg-yellow-600 text-black px-2 py-1 rounded">-</button>
+          <button @click="decreaseQuantity" class="px-2 py-1 text-black bg-yellow-500 rounded hover:bg-yellow-600">
+            -
+          </button>
           <span class="mx-2">{{ quantity }}</span>
-          <button @click="increaseQuantity" class="bg-yellow-500 hover:bg-yellow-600 text-black px-2 py-1 rounded">+</button>
+          <button @click="increaseQuantity" class="px-2 py-1 text-black bg-yellow-500 rounded hover:bg-yellow-600">
+            +
+          </button>
         </div>
 
         <!-- Bouton d'ajout au panier -->
-        <button @click="addToCart" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
+        <button @click="addToCart" class="px-4 py-2 font-bold text-black bg-yellow-500 rounded hover:bg-yellow-600">
           Ajouter au panier
         </button>
       </div>
@@ -31,28 +39,28 @@
 
     <!-- Section pour afficher les produits similaires -->
     <div v-if="groupedSimilarProducts.length > 0" class="mt-8">
-      <h2 class="text-2xl font-bold mb-4">Produits Similaires</h2>
+      <h2 class="mb-4 text-2xl font-bold">Produits Similaires</h2>
 
       <!-- Intégration du carousel avec 3 produits par slide -->
       <Carousel>
         <CarouselContent>
           <CarouselItem v-for="group in groupedSimilarProducts" :key="group[0]?.postgresId">
             <!-- Wrapper pour chaque slide contenant 3 produits -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div 
-                v-for="similarProduct in group" 
-                :key="similarProduct.postgresId" 
-                @click="goToProductDetail(similarProduct.postgresId)" 
-                class="cursor-pointer mx-2"
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div
+                v-for="similarProduct in group"
+                :key="similarProduct.postgresId"
+                @click="goToProductDetail(similarProduct.postgresId)"
+                class="mx-2 cursor-pointer"
               >
                 <!-- Affichage de l'image du produit similaire -->
-                <img 
-                  :src="`${apiBaseUrl}/${similarProduct.imagePath}`" 
-                  :alt="similarProduct.name" 
-                  class="w-full h-40 object-cover rounded-md" 
+                <img
+                  :src="`${apiBaseUrl}/${similarProduct.imagePath}`"
+                  :alt="similarProduct.name"
+                  class="object-cover w-full h-40 rounded-md"
                 />
-                <h3 class="text-center text-sm mt-2">{{ similarProduct.name }}</h3>
-                <p class="text-center text-sm">{{ similarProduct.price }} €</p>
+                <h3 class="mt-2 text-sm text-center">{{ similarProduct.name }}</h3>
+                <p class="text-sm text-center">{{ similarProduct.price }} €</p>
               </div>
             </div>
           </CarouselItem>
@@ -63,10 +71,13 @@
     </div>
 
     <!-- Section pour la pub de Troupicool -->
-    <div class="mt-12 p-6 bg-gradient rounded-lg text-center">
-      <h3 class="text-2xl font-bold text-white mb-2">Découvrez la Magie des Saveurs Troupicool!</h3>
-      <p class="text-white">Nos boissons naturelles sont fabriquées avec amour en France, en utilisant uniquement les meilleurs ingrédients. Rejoignez la famille Troupicool et goûtez à l'excellence à chaque gorgée!</p>
-      <button class="mt-4 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-6 rounded">
+    <div class="p-6 mt-12 text-center rounded-lg bg-gradient">
+      <h3 class="mb-2 text-2xl font-bold text-white">Découvrez la Magie des Saveurs Troupicool!</h3>
+      <p class="text-white">
+        Nos boissons naturelles sont fabriquées avec amour en France, en utilisant uniquement les meilleurs ingrédients.
+        Rejoignez la famille Troupicool et goûtez à l'excellence à chaque gorgée!
+      </p>
+      <button class="px-6 py-2 mt-4 font-bold text-black bg-yellow-500 rounded hover:bg-yellow-600">
         En savoir plus
       </button>
     </div>
@@ -74,36 +85,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useCartStore } from '@/stores/cartStore';
-import axios from 'axios';
+import { ref, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useCartStore } from "@/stores/cartStore";
+import axios from "axios";
 
 const route = useRoute();
 const router = useRouter();
 const cartStore = useCartStore();
 
 const isLoading = ref(true);
-const product = ref<{
-  id: number;
-  name: string;
-  image: string;
-  category: string;
-  price: number;
-  size: string;
-  rating: number;
-  description: string;
-} | null>(null);
+
+const product = ref<any>(null);
 
 const quantity = ref(1);
-const similarProducts = ref<Array<{
-  postgresId: number;
-  name: string;
-  imagePath: string;
-  category: string;
-  price: number;
-}>>([]);
 
+const similarProducts = ref<Array<any>>([]);
 const groupedSimilarProducts = ref<Array<Array<any>>>([]);
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -121,15 +118,20 @@ const fetchProductDetails = async (id: number) => {
     const response = await axios.get(`${apiBaseUrl}/api/products/${id}`);
     const productData = response.data;
 
+    // IMPORTANT : On mappe (postgresId ou _id) vers id
     product.value = {
-      ...productData,
-      image: productData.imagePath ? `${apiBaseUrl}/${productData.imagePath}` : 'path/to/default/image.jpg'
+      id: productData.postgresId,
+      name: productData.name,
+      category: productData.category,
+      price: productData.price,
+      description: productData.description,
+      image: productData.imagePath ? `${apiBaseUrl}/${productData.imagePath}` : "path/to/default/image.jpg",
     };
 
-    await fetchSimilarProducts(productData.category, productData.postgresId);
+    await fetchSimilarProducts(product.value.category, productData.postgresId);
     isLoading.value = false;
   } catch (error) {
-    console.error('Erreur lors de la récupération des détails du produit :', error);
+    console.error("Erreur lors de la récupération des détails du produit :", error);
     isLoading.value = false;
   }
 };
@@ -139,10 +141,10 @@ const fetchSimilarProducts = async (productCategory: string, currentProductId: n
     const response = await axios.get(`${apiBaseUrl}/api/products/similar`, {
       params: {
         category: productCategory,
-        id: currentProductId
-      }
+        id: currentProductId,
+      },
     });
-
+    // Filtrer pour ne pas inclure le produit courant
     similarProducts.value = response.data.data.filter((p: any) => p.postgresId !== currentProductId);
     groupedSimilarProducts.value = groupProducts(similarProducts.value, 3);
   } catch (error) {
@@ -151,7 +153,7 @@ const fetchSimilarProducts = async (productCategory: string, currentProductId: n
 };
 
 const goToProductDetail = (productId: number) => {
-  router.push({ name: 'product-product-detail', params: { id: productId } });
+  router.push({ name: "product-product-detail", params: { id: productId } });
 };
 
 const increaseQuantity = () => {
@@ -164,9 +166,16 @@ const decreaseQuantity = () => {
 
 const addToCart = () => {
   if (product.value) {
-    for (let i = 0; i < quantity.value; i++) {
-      cartStore.addProductToCart(product.value);
-    }
+    cartStore.addProductToCart({
+      id: product.value.id,
+      name: product.value.name,
+      description: product.value.description,
+      price: product.value.price,
+      image: product.value.image,
+      category: product.value.category,
+      quantity: quantity.value,
+    });
+
     quantity.value = 1;
   }
 };
@@ -176,9 +185,13 @@ onMounted(() => {
   fetchProductDetails(productId);
 });
 
-watch(() => route.params.id, (newId) => {
-  fetchProductDetails(Number(newId));
-});
+onMounted(() => {});
+watch(
+  () => route.params.id,
+  (newId) => {
+    fetchProductDetails(Number(newId));
+  }
+);
 </script>
 
 <style scoped>

@@ -9,6 +9,8 @@ const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const shippingRoutes = require("./routes/shippingRoutes");
+const stripeRoutes = require("./routes/stripeRoutes");
+const orderItemRoutes = require("./routes/orderItemRoutes");
 const nodemailer = require("nodemailer");
 const session = require("express-session");
 
@@ -26,7 +28,9 @@ app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/shipping", shippingRoutes);
+app.use("/api/order-items", orderItemRoutes);
 app.use("/uploads", express.static("uploads"));
+app.use("/api/stripe", stripeRoutes);
 
 app.use((req, res, next) => {
   res.status(404).json({ message: "Route not found" });

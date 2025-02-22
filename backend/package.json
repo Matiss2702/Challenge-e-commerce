@@ -28,6 +28,7 @@
     "send": "^1.1.0",
     "sequelize": "^6.37.3",
     "serve-static": "^1.16.2",
+    "stripe": "^17.4.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

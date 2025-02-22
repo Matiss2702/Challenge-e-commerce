@@ -1,20 +1,19 @@
 <template>
   <div class="admin-container">
     <AdminSidebar />
-    <div class="admin-content p-4">
-      <h1>{{ isEditMode ? 'Modifier Utilisateur' : 'Ajouter Utilisateur' }}</h1>
+    <div class="p-4 admin-content">
+      <h1>{{ isEditMode ? "Modifier Utilisateur" : "Ajouter Utilisateur" }}</h1>
       <UserForm v-if="user" :user="user" :isEditMode="isEditMode" @submit="handleUserFormSubmit" @cancel="goBack" />
     </div>
   </div>
 </template>
 
-
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import axios from 'axios';
-import UserForm from '@/domains/admin/components/UserForm.vue';
-import AdminSidebar from '@/domains/navigation/components/TheAdminSidebar.vue';
+import { ref, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import axios from "axios";
+import UserForm from "@/domains/admin/components/UserForm.vue";
+import AdminSidebar from "@/domains/navigation/components/TheAdminSidebar.vue";
 
 interface User {
   id: number;
@@ -35,7 +34,7 @@ onMounted(async () => {
 
   if (id) {
     isEditMode.value = true;
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
 
     try {
       const response = await axios.get(`${apiBaseUrl}/api/users/${id}`, {
@@ -46,27 +45,25 @@ onMounted(async () => {
 
       if (response.data) {
         user.value = response.data.postgresData;
-        console.log('User data loaded:', user.value);
       } else {
-        console.error('No user data found for this ID.');
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
+      console.error("Error loading user data:", error);
     }
   } else {
     isEditMode.value = false;
     user.value = {
       id: 0,
-      name: '',
-      email: '',
-      birthdate: '',
-      role: 'ROLE_USER',
+      name: "",
+      email: "",
+      birthdate: "",
+      role: "ROLE_USER",
     };
   }
 });
 
 const handleUserFormSubmit = async (userData: User) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem("token");
   try {
     if (isEditMode.value) {
       await axios.put(`${apiBaseUrl}/api/users/${userData.id}`, userData, {
@@ -81,15 +78,12 @@ const handleUserFormSubmit = async (userData: User) => {
         },
       });
     }
-    console.log('Form submitted successfully!');
-    router.push('/admin/users');
-  } catch (error) {
-    console.error('Error submitting the form:', error);
-  }
+    router.push("/admin/users");
+  } catch (error) {}
 };
 
 const goBack = () => {
-  router.push('/admin/users');
+  router.push("/admin/users");
 };
 </script>
 

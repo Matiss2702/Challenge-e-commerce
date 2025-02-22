@@ -1,32 +1,33 @@
 <template>
-  <div @click="handleClick" class="bg-white rounded-lg p-4 flex flex-col cursor-pointer relative">
-    <!-- Image du produit avec redirection au clic -->
-    <img v-if="product.image" :src="product.image" :alt="product.name" class="rounded-md mb-4 object-cover w-full h-61" @click.stop="handleClick" />
+  <div @click="handleClick" class="relative flex flex-col p-4 bg-white rounded-lg cursor-pointer">
+    <img
+      v-if="product.image"
+      :src="product.image"
+      :alt="product.name"
+      class="object-cover w-full mb-4 rounded-md h-61"
+      @click.stop="handleClick"
+    />
 
-    <!-- Nom et détails du produit -->
     <div class="flex items-center justify-between">
-      <h2 class="text-lg text-left font-semibold mb-2">{{ product.name || 'Nom du produit non disponible' }}</h2>
-      <!-- Icône d'avertissement à droite du titre si le produit est restreint et l'utilisateur n'est pas connecté -->
-      <div v-if="product.isAgeRestricted && !isLoggedIn" class="warning-icon ml-2">
+      <h2 class="mb-2 text-lg font-semibold text-left">{{ product.name || "Nom du produit non disponible" }}</h2>
+      <div v-if="product.isAgeRestricted && !isLoggedIn" class="ml-2 warning-icon">
         <AlertTriangle class="text-red-500" :size="20" />
         <div class="tooltip">Connectez-vous pour voir ce produit</div>
       </div>
     </div>
 
-    <p class="text-gray-500 mb-1 text-left">{{ product.category || 'Catégorie non disponible' }}</p>
-    <p class="text-black font-bold text-left">{{ product.price }}€</p>
+    <p class="mb-1 text-left text-gray-500">{{ product.category || "Catégorie non disponible" }}</p>
+    <p class="font-bold text-left text-black">{{ product.price }}€</p>
 
-    <!-- Icône pour produits alcoolisés (age restricted) -->
-    <div v-if="product.isAgeRestricted" class="absolute top-2 left-2 bg-black bg-opacity-50 rounded-full p-1">
+    <div v-if="product.isAgeRestricted" class="absolute p-1 bg-black bg-opacity-50 rounded-full top-2 left-2">
       <Wine class="text-white" :size="20" />
     </div>
   </div>
 </template>
 
-
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue';
-import { Wine, AlertTriangle } from 'lucide-vue-next';
+import { defineProps, defineEmits } from "vue";
+import { Wine, AlertTriangle } from "lucide-vue-next";
 
 const props = defineProps<{
   product: {
@@ -41,11 +42,11 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'select-product', id: number): void;
+  (e: "select-product", id: number): void;
 }>();
 
 const handleClick = () => {
-  emit('select-product', props.product.id);
+  emit("select-product", props.product.id);
 };
 </script>
 
@@ -71,5 +72,4 @@ const handleClick = () => {
 .warning-icon:hover .tooltip {
   display: block;
 }
-
 </style>

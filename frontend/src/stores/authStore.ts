@@ -13,65 +13,51 @@ export const useAuthStore = defineStore("auth", {
   }),
 
   actions: {
-    // Action for login
     async login(credentials: { email: string; password: string }) {
       try {
         const response = await axios.post(`${apiBaseUrl}/api/auth/login`, credentials);
-
-        // Store token and fetch user details
         this.token = response.data.token;
         localStorage.setItem("token", this.token);
-
         await this.fetchUser();
         toast({
           title: "Connexion réussie",
           description: "Vous êtes maintenant connecté.",
           variant: "default",
         });
-
         router.push("/profile");
       } catch (error: any) {
         console.error("Erreur lors de la connexion:", error);
-
         toast({
           title: "Erreur de connexion",
           description: error.response?.data?.message || "Impossible de se connecter. Veuillez réessayer.",
           variant: "destructive",
         });
-
         throw new Error("Échec de la connexion.");
       }
     },
 
-    // Action for register
     async register(data: { name: string; birthdate: string; email: string; password: string }) {
       try {
         await axios.post(`${apiBaseUrl}/api/auth/register`, data);
-
         toast({
           title: "Inscription réussie",
           description: "Veuillez vérifier votre email pour confirmer votre compte.",
           variant: "default",
         });
-
         router.push("/check-email");
       } catch (error: any) {
         console.error("Erreur lors de l'inscription:", error);
-
         toast({
           title: "Erreur d'inscription",
           description: error.response?.data?.message || "L'inscription a échoué. Veuillez réessayer.",
           variant: "destructive",
         });
-
         throw new Error("Échec de l'inscription.");
       }
     },
 
-    // Fetch user details
     async fetchUser() {
       if (!this.token) return;
-
       this.isLoadingUser = true;
       try {
         const response = await axios.get(`${apiBaseUrl}/api/auth/me`, {
@@ -80,20 +66,17 @@ export const useAuthStore = defineStore("auth", {
         this.user = response.data;
       } catch (error: any) {
         console.error("Erreur lors de la récupération des informations utilisateur:", error);
-
         toast({
           title: "Erreur",
           description: "Impossible de récupérer les informations utilisateur.",
           variant: "destructive",
         });
-
         this.logout();
       } finally {
         this.isLoadingUser = false;
       }
     },
 
-    // Vérification du token et du rôle utilisateur
     async verifyTokenAndRole(requiredRole?: string) {
       if (!this.token) {
         toast({
@@ -106,9 +89,7 @@ export const useAuthStore = defineStore("auth", {
       }
 
       try {
-        // Vérifie et récupère l'utilisateur
         await this.fetchUser();
-
         if (requiredRole && this.user?.role !== requiredRole) {
           toast({
             title: "Accès refusé",
@@ -118,33 +99,27 @@ export const useAuthStore = defineStore("auth", {
           router.push("/forbidden");
           return false;
         }
-
         return true;
       } catch (error: any) {
         console.error("Erreur lors de la vérification du rôle:", error);
-
         toast({
           title: "Erreur",
           description: "Impossible de vérifier votre rôle. Veuillez réessayer.",
           variant: "destructive",
         });
-
         return false;
       }
     },
 
-    // Logout action
     logout() {
       this.token = "";
       this.user = null;
       localStorage.removeItem("token");
-
       toast({
         title: "Déconnexion réussie",
         description: "Vous avez été déconnecté avec succès.",
         variant: "default",
       });
-
       router.push("/");
     },
   },
