@@ -47,7 +47,11 @@ module.exports = function (sequelize) {
   );
 
   Product.associate = (models) => {
-    Product.hasMany(models.OrderItem, { foreignKey: "product_id" });
+    Product.hasMany(models.CartItem, { foreignKey: "product_id" });
+
+    if (models.OrderItem) {
+      Product.hasMany(models.OrderItem, { foreignKey: "product_id" });
+    }
   };
 
   return Product;

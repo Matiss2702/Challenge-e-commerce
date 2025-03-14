@@ -41,11 +41,10 @@
     <div v-if="groupedSimilarProducts.length > 0" class="mt-8">
       <h2 class="mb-4 text-2xl font-bold">Produits Similaires</h2>
 
-      <!-- Intégration du carousel avec 3 produits par slide -->
+      <!-- Carousel -->
       <Carousel>
         <CarouselContent>
           <CarouselItem v-for="group in groupedSimilarProducts" :key="group[0]?.postgresId">
-            <!-- Wrapper pour chaque slide contenant 3 produits -->
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div
                 v-for="similarProduct in group"
@@ -53,7 +52,6 @@
                 @click="goToProductDetail(similarProduct.postgresId)"
                 class="mx-2 cursor-pointer"
               >
-                <!-- Affichage de l'image du produit similaire -->
                 <img
                   :src="`${apiBaseUrl}/${similarProduct.imagePath}`"
                   :alt="similarProduct.name"
@@ -70,7 +68,7 @@
       </Carousel>
     </div>
 
-    <!-- Section pour la pub de Troupicool -->
+    <!-- Section pub Troupicool -->
     <div class="p-6 mt-12 text-center rounded-lg bg-gradient">
       <h3 class="mb-2 text-2xl font-bold text-white">Découvrez la Magie des Saveurs Troupicool!</h3>
       <p class="text-white">
@@ -95,9 +93,7 @@ const router = useRouter();
 const cartStore = useCartStore();
 
 const isLoading = ref(true);
-
 const product = ref<any>(null);
-
 const quantity = ref(1);
 
 const similarProducts = ref<Array<any>>([]);
@@ -118,7 +114,6 @@ const fetchProductDetails = async (id: number) => {
     const response = await axios.get(`${apiBaseUrl}/api/products/${id}`);
     const productData = response.data;
 
-    // IMPORTANT : On mappe (postgresId ou _id) vers id
     product.value = {
       id: productData.postgresId,
       name: productData.name,
@@ -144,7 +139,6 @@ const fetchSimilarProducts = async (productCategory: string, currentProductId: n
         id: currentProductId,
       },
     });
-    // Filtrer pour ne pas inclure le produit courant
     similarProducts.value = response.data.data.filter((p: any) => p.postgresId !== currentProductId);
     groupedSimilarProducts.value = groupProducts(similarProducts.value, 3);
   } catch (error) {
@@ -164,19 +158,14 @@ const decreaseQuantity = () => {
   if (quantity.value > 1) quantity.value--;
 };
 
-const addToCart = () => {
+const addToCart = async () => {
   if (product.value) {
-    cartStore.addProductToCart({
-      id: product.value.id,
-      name: product.value.name,
-      description: product.value.description,
-      price: product.value.price,
-      image: product.value.image,
-      category: product.value.category,
-      quantity: quantity.value,
-    });
-
-    quantity.value = 1;
+    try {
+      await cartStore.addProductToCart(product.value.id, quantity.value);
+      quantity.value = 1;
+    } catch (err) {
+      console.error("Erreur addToCart:", err);
+    }
   }
 };
 
@@ -185,7 +174,6 @@ onMounted(() => {
   fetchProductDetails(productId);
 });
 
-onMounted(() => {});
 watch(
   () => route.params.id,
   (newId) => {
@@ -198,17 +186,14 @@ watch(
 .md\:mr-8 {
   margin-right: 2rem;
 }
-
 .bg-gradient {
   background: black;
 }
-
 .carousel-wrapper {
   width: 100%;
   display: flex;
   justify-content: center;
 }
-
 .carousel img {
   width: 100%;
   height: auto;

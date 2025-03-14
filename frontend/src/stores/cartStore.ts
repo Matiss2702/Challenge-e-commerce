@@ -1,123 +1,114 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import axios from "axios";
+import { useAuthStore } from "@/stores/authStore";
 
-export interface CartItem {
-  id: number | string;
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+interface ProductData {
+  id: number;
   name: string;
-  description?: string;
   price: number;
-  quantity: number;
-  image: string;
-  category: string;
-  originalPrice?: number;
+  imagePath?: string;
+  category?: string;
+  description?: string;
 }
 
-interface Promotion {
-  code: string;
-  discount: number;
+interface CartItem {
+  id: number;
+  product_id: number;
+  quantity: number;
+  Product?: ProductData;
+}
+
+interface Cart {
+  id: number;
+  user_id: number;
+  status: string;
+  CartItems: CartItem[];
 }
 
 export const useCartStore = defineStore("cart", () => {
-  const cartItems = ref<CartItem[]>([]);
+  const cart = ref<Cart | null>(null);
 
-  // Liste de promotions
-  const promotions = ref<Promotion[]>([
-    { code: "PROMO10", discount: 10 },
-    { code: "PROMO20", discount: 20 },
-  ]);
-  const currentPromo = ref<Promotion | null>(null);
+  const authStore = useAuthStore();
+  const authHeaders = computed(() => ({
+    Authorization: `Bearer ${authStore.token}`,
+  }));
 
-  const loadProductsFromAPI = async () => {
+  async function fetchCart() {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products`);
-      const products = response.data; // Supposons un tableau
-
-      products.forEach((raw: any) => {
-        addProductToCart(raw);
+      const res = await axios.get(`${apiBaseUrl}/api/cart`, {
+        headers: authHeaders.value,
       });
+      cart.value = res.data;
     } catch (err) {
-      console.error("Erreur lors du chargement des produits:", err);
+      console.error("Erreur fetchCart:", err);
+      cart.value = null;
     }
-  };
+  }
 
-  const addProductToCart = (rawProduct: any) => {
-    const itemId = rawProduct._id || rawProduct.id;
-
-    const product: CartItem = {
-      id: itemId,
-      name: rawProduct.name,
-      description: rawProduct.description || "",
-      price: rawProduct.price || 0,
-      quantity: rawProduct.quantity || 1,
-      image: rawProduct.image || "",
-      category: rawProduct.category || "",
-    };
-    console.log("Produit ajouté au panier:", product);
-    const existingProduct = cartItems.value.find((p) => p.id === product.id);
-    if (existingProduct) {
-      existingProduct.quantity += product.quantity;
-    } else {
-      cartItems.value.push(product);
+  async function addProductToCart(product_id: number, quantity = 1) {
+    try {
+      await axios.post(`${apiBaseUrl}/api/cart/items`, { product_id, quantity }, { headers: authHeaders.value });
+      await fetchCart();
+    } catch (err) {
+      console.error("Erreur addProductToCart:", err);
     }
-  };
+  }
 
-  /**
-   * Supprimer un produit (ou décrémenter) du panier
-   */
-  const removeProductFromCart = (productId: number | string) => {
-    const productIndex = cartItems.value.findIndex((item) => item.id === productId);
-    if (productIndex !== -1) {
-      if (cartItems.value[productIndex].quantity > 1) {
-        cartItems.value[productIndex].quantity--;
-      } else {
-        cartItems.value.splice(productIndex, 1);
-      }
+  async function updateCartItem(itemId: number, newQuantity: number) {
+    try {
+      await axios.patch(
+        `${apiBaseUrl}/api/cart/items/${itemId}`,
+        { quantity: newQuantity },
+        { headers: authHeaders.value }
+      );
+      await fetchCart();
+    } catch (err) {
+      console.error("Erreur updateCartItem:", err);
     }
-  };
+  }
 
-  /**
-   * Vider le panier
-   */
-  const clearCart = () => {
-    cartItems.value = [];
-    currentPromo.value = null;
-  };
-
-  /**
-   * Appliquer un code promo
-   */
-  const applyPromoCode = (code: string) => {
-    const promo = promotions.value.find((p) => p.code === code);
-    if (promo) {
-      currentPromo.value = promo;
-      cartItems.value.forEach((item) => {
-        // Conserve le prix d'origine si pas déjà fait
-        if (!item.originalPrice) {
-          item.originalPrice = item.price;
-        }
-        // Applique la promo
-        item.price = item.originalPrice - (item.originalPrice * promo.discount) / 100;
+  async function removeCartItem(itemId: number) {
+    try {
+      await axios.delete(`${apiBaseUrl}/api/cart/items/${itemId}`, {
+        headers: authHeaders.value,
       });
+      await fetchCart();
+    } catch (err) {
+      console.error("Erreur removeCartItem:", err);
     }
-  };
+  }
 
-  /**
-   * Calculer le total du panier
-   */
-  const calculateTotal = () => {
-    return cartItems.value.reduce((acc, item) => acc + item.price * item.quantity, 0).toFixed(2);
-  };
+  async function clearCart() {
+    try {
+      await axios.delete(`${apiBaseUrl}/api/cart/clear`, {
+        headers: authHeaders.value,
+      });
+      cart.value = null;
+    } catch (err) {
+      console.error("Erreur clearCart:", err);
+    }
+  }
+
+  function calculateTotal() {
+    if (!cart.value || !cart.value.CartItems) return 0;
+    let total = 0;
+    cart.value.CartItems.forEach((item) => {
+      const price = item.Product?.price ?? 0;
+      total += price * item.quantity;
+    });
+    return total.toFixed(2);
+  }
 
   return {
-    cartItems,
-    promotions,
-    currentPromo,
-    loadProductsFromAPI,
+    cart,
+    fetchCart,
     addProductToCart,
-    removeProductFromCart,
+    updateCartItem,
+    removeCartItem,
     clearCart,
-    applyPromoCode,
     calculateTotal,
   };
 });

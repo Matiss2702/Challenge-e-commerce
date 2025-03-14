@@ -5,14 +5,14 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import axios from "axios";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/authStore";
-import { onMounted } from "vue";
+
 const cartStore = useCartStore();
 const authStore = useAuthStore();
 
-// Exemple de shipping details, à adapter
 const shipping_details = {
   address: "12 rue de la Paix",
   city: "Paris",
@@ -21,32 +21,33 @@ const shipping_details = {
   shipping_method: "standard",
 };
 
-const checkout = async () => {
-  try {
-    const token = localStorage.getItem("token"); // si vous gérez un token d'auth
+const cartItems = computed(() => cartStore.cart?.CartItems || []);
 
-    // On construit le tableau "items" pour l'API Stripe
-    const items = cartStore.cartItems.map((item) => {
-      if (!item.id) {
-        console.error("Erreur : Produit sans ID détecté.", item);
-        throw new Error("Tous les produits doivent avoir un ID.");
+async function checkout() {
+  try {
+    const token = localStorage.getItem("token") || "";
+    const userId = authStore.user?.postgresId;
+    const userIdInt = parseInt(userId || "", 10) || 0;
+
+    const items = cartItems.value.map((item) => {
+      const price = item.Product?.price || 0;
+      const name = item.Product?.name || "Nom indisponible";
+      let description = item.Product?.description || "";
+
+      // **Éviter d'envoyer une description vide** :
+      if (!description) {
+        description = "Aucune description";
       }
 
       return {
-        product_id: item.id, // côté back, on attend "product_id"
-        name: item.name,
-        description: item.description || "",
-        price: item.price,
+        product_id: item.product_id,
+        name,
+        description,
+        price,
         quantity: item.quantity,
       };
     });
 
-    // Si l'utilisateur a un "postgresId"
-    const userId = authStore.user?.postgresId;
-    // Convertir en entier
-    const userIdInt = parseInt(userId, 10) || 0;
-
-    // Appel vers votre backend Stripe
     const response = await axios.post(
       `${import.meta.env.VITE_API_BASE_URL}/api/stripe/create-checkout-session`,
       {
@@ -64,11 +65,5 @@ const checkout = async () => {
     console.error("Erreur lors de la redirection vers Stripe Checkout:", error);
     alert("Une erreur est survenue lors du paiement. Veuillez réessayer.");
   }
-};
-
-onMounted(() => {
-  console.log("ici");
-});
+}
 </script>
-
-<style scoped></style>
