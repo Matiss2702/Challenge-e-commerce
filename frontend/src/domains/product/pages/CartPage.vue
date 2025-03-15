@@ -15,7 +15,18 @@
           <div>
             <h2 class="text-lg font-semibold">{{ item.Product?.name }}</h2>
             <p class="text-gray-500">{{ item.Product?.category }}</p>
-            <p>{{ item.Product?.price }} € x {{ item.quantity }}</p>
+
+            <!-- Vérification de la valeur du prix -->
+            <p>
+              Prix HT : {{ formatPrice(item.Product?.price) }} €
+              <span v-if="item.Product?.isAgeRestricted">(+ 20% TVA)</span>
+              <span v-else>(+ 5.5% TVA)</span>
+            </p>
+
+            <p>
+              {{ (typeof item.price === "string" ? parseFloat(item.price) : item.price).toFixed(2) }} € x
+              {{ item.quantity }}
+            </p>
           </div>
         </div>
       </div>
@@ -45,7 +56,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { useCartStore } from "@/stores/cartStore";
+import { useCartStore, type CartItem } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/authStore";
 
 const cartStore = useCartStore();
@@ -65,20 +76,20 @@ function clearCart() {
   cartStore.clearCart();
 }
 
+function formatPrice(price: number | undefined | null): string {
+  if (price === undefined || price === null) return "0.00";
+  return parseFloat(price.toString()).toFixed(2);
+}
+
 async function checkout() {
   try {
-    const items = (cart.value?.CartItems || []).map((item) => {
-      const rawDesc = item.Product?.description || "";
-      let description = rawDesc ? rawDesc : null;
-
-      return {
-        product_id: item.product_id,
-        name: item.Product?.name || "Sans nom",
-        description: description ?? "Aucune description",
-        price: item.Product?.price || 0,
-        quantity: item.quantity,
-      };
-    });
+    const items = (cart.value?.CartItems || []).map((item: CartItem) => ({
+      product_id: item.product_id,
+      name: item.Product?.name || "Sans nom",
+      description: item.Product?.description || "Aucune description",
+      price: item.price ? parseFloat(item.price.toString()) : 0,
+      quantity: item.quantity,
+    }));
 
     const shipping_details = {
       address: "12 rue de la Paix",
@@ -88,7 +99,6 @@ async function checkout() {
       shipping_method: "standard",
     };
 
-    // Appel vers le endpoint Stripe
     const token = localStorage.getItem("token") || "";
     const response = await fetch(`${apiBaseUrl}/api/stripe/create-checkout-session`, {
       method: "POST",
@@ -108,7 +118,6 @@ async function checkout() {
     if (data.url) {
       window.location.href = data.url;
     } else {
-      console.error("Erreur create-checkout-session:", data);
       alert("Erreur lors de la création de la session Stripe.");
     }
   } catch (error) {
