@@ -21,7 +21,7 @@ transporter.verify((error, success) => {
 
 const sendEmail = async (to, subject, htmlContent) => {
   const mailOptions = {
-    from: `"Votre Application" <matiss.haillouy@gmail.com>`,
+    from: `"Team Troupicool" <matiss.haillouy@gmail.com>`,
     to: to,
     subject: subject,
     html: htmlContent,

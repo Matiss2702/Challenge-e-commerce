@@ -9,8 +9,9 @@ const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const shippingRoutes = require("./routes/shippingRoutes");
-const stripeRoutes = require("./routes/stripeRoutes");
 const cartRoutes = require("./routes/cartRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const stripeRoutes = require("./routes/stripeRoutes");
 const nodemailer = require("nodemailer");
 const session = require("express-session");
 
@@ -20,6 +21,13 @@ connectDB();
 const app = express();
 
 app.use(cors());
+
+app.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  require("./controllers/stripeController").handleWebhook
+);
+
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
@@ -30,6 +38,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/shipping", shippingRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/uploads", express.static("uploads"));
+app.use("/api/admin", adminRoutes);
 app.use("/api/stripe", stripeRoutes);
 
 app.use((req, res, next) => {
@@ -56,10 +65,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Session setup
 app.use(
   session({
-    secret: "challenge4IWS2",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
     cookie: { secure: process.env.NODE_ENV === "production" },

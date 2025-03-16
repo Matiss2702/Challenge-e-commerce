@@ -77,7 +77,7 @@ export const useAuthStore = defineStore("auth", {
       }
     },
 
-    async verifyTokenAndRole(requiredRole?: string) {
+    async verifyTokenAndRole(requiredRole?: string | string[]) {
       if (!this.token) {
         toast({
           title: "Erreur",
@@ -90,14 +90,17 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         await this.fetchUser();
-        if (requiredRole && this.user?.role !== requiredRole) {
-          toast({
-            title: "Accès refusé",
-            description: "Vous n'avez pas les autorisations nécessaires pour accéder à cette page.",
-            variant: "destructive",
-          });
-          router.push("/forbidden");
-          return false;
+        if (requiredRole) {
+          const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+          if (!roles.includes(this.user?.role)) {
+            toast({
+              title: "Accès refusé",
+              description: "Vous n'avez pas les autorisations nécessaires pour accéder à cette page.",
+              variant: "destructive",
+            });
+            router.push("/forbidden");
+            return false;
+          }
         }
         return true;
       } catch (error: any) {
@@ -126,6 +129,13 @@ export const useAuthStore = defineStore("auth", {
 
   getters: {
     isAuthenticated: (state) => !!state.token && !!state.user,
-    hasRole: (state) => (role: string) => state.user?.role === role,
+    hasRole:
+      (state) =>
+      (role: string | string[]): boolean => {
+        if (Array.isArray(role)) {
+          return role.includes(state.user?.role);
+        }
+        return state.user?.role === role;
+      },
   },
 });

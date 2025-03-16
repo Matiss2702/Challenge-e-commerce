@@ -1,21 +1,24 @@
 <template>
-  <div class="flex max-w-full mx-auto py-2 px-1">
+  <div class="flex max-w-full px-1 py-2 mx-auto">
     <!-- Sidebar avec filtres -->
-    <TheSidebar 
-      :categories="categories" 
-      @filter-category="filterByCategory" 
+    <TheSidebar
+      :categories="categories"
+      @filter-category="filterByCategory"
       @filter-price="filterByPrice"
       @filter-alcohol="filterByAlcohol"
       @filter-stock="filterByStock"
+      @filter-search="filterBySearch"
     />
 
     <!-- Contenu principal de la page produit -->
     <div class="flex-grow px-2">
-      <h1 class="text-3xl font-bold mb-6">Tous nos Produits</h1>
+      <h1 class="mb-6 text-3xl font-bold">Tous nos Produits</h1>
+
+      <!-- Message quand aucun produit n'est trouvé -->
+      <div v-if="products.length === 0" class="py-4 text-center text-gray-600">Aucun résultat trouvé.</div>
 
       <!-- Grille des produits -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <!-- Boucle pour afficher les cartes de produits -->
+      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         <Card
           v-for="product in products"
           :key="product.id"
@@ -29,11 +32,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import axios from 'axios';
-import TheSidebar from '@/domains/navigation/components/TheSidebar.vue';
-import Card from '@/domains/product/components/Card.vue';
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import axios from "axios";
+import TheSidebar from "@/domains/navigation/components/TheSidebar.vue";
+import Card from "@/domains/product/components/Card.vue";
 
 // Interface pour typer les produits
 interface Product {
@@ -46,90 +49,93 @@ interface Product {
   isAgeRestricted: boolean;
 }
 
-// Variables et constantes
+// Variables réactives
 const products = ref<Product[]>([]);
 const categories = ref<string[]>([]);
 const isLoggedIn = ref(false);
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const router = useRouter();
 
-// Paramètres de filtres
+// Paramètres de filtres incluant la recherche
 const filters = ref({
   category: [] as string[],
   maxPrice: 100,
-  alcohol: '',
-  stock: false
+  alcohol: "",
+  stock: false,
+  searchTerm: "",
 });
 
-// Charger les produits avec filtres
+// Charger les produits depuis l'API en appliquant les filtres
 const loadProducts = async () => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     const params = {
       category: filters.value.category,
       maxPrice: filters.value.maxPrice,
       alcohol: filters.value.alcohol,
       inStock: filters.value.stock.toString(),
+      searchTerm: filters.value.searchTerm,
     };
 
     const response = await axios.get(`${apiBaseUrl}/api/products`, {
       headers: { Authorization: `Bearer ${token}` },
-      params
+      params,
     });
 
     const baseImageUrl = `${apiBaseUrl}/`;
-    
     products.value = response.data.map((product: any) => ({
       id: product.postgresId,
       name: product.name,
       description: product.description,
       price: product.price,
       category: product.category,
-      image: product.imagePath ? `${baseImageUrl}${product.imagePath}` : 'path/to/default/image.jpg',
+      image: product.imagePath ? `${baseImageUrl}${product.imagePath}` : "path/to/default/image.jpg",
       isAgeRestricted: product.isAgeRestricted || false,
     }));
   } catch (error) {
-    console.error('Erreur lors de la récupération des produits :', error);
+    console.error("Erreur lors de la récupération des produits :", error);
   }
 };
 
-// Charger les catégories dynamiques
+// Charger dynamiquement les catégories
 const loadCategories = async () => {
   try {
     const response = await axios.get(`${apiBaseUrl}/api/products/categories`);
     categories.value = response.data;
   } catch (error) {
-    console.error('Erreur lors de la récupération des catégories :', error);
+    console.error("Erreur lors de la récupération des catégories :", error);
   }
 };
 
-// Filtrer par catégories multiples
+// Méthodes de filtrage
 const filterByCategory = (selectedCategories: string[]) => {
   filters.value.category = selectedCategories;
   loadProducts();
 };
 
-// Filtrer par prix
 const filterByPrice = (price: number) => {
   filters.value.maxPrice = price;
   loadProducts();
 };
 
-// Filtrer par produits alcoolisés
 const filterByAlcohol = (type: string) => {
   filters.value.alcohol = type;
   loadProducts();
 };
 
-// Filtrer par stock
 const filterByStock = (inStock: boolean) => {
   filters.value.stock = inStock;
   loadProducts();
 };
 
-// Redirection vers les détails du produit
+const filterBySearch = (search: string) => {
+  filters.value.searchTerm = search;
+  loadProducts();
+};
+
+// Redirection vers le détail d'un produit
 const goToProductDetail = (productId: number) => {
-  router.push({ name: 'product-product-detail', params: { id: productId } });
+  router.push({ name: "product-product-detail", params: { id: productId } });
 };
 
 onMounted(() => {
@@ -137,29 +143,3 @@ onMounted(() => {
   loadCategories();
 });
 </script>
-
-
-
-<style scoped>
-.admin-container {
-  display: flex;
-}
-
-.admin-content {
-  flex-grow: 1;
-  padding: 20px;
-}
-
-.alert {
-  padding: 1rem;
-  margin-bottom: 1rem;
-  border: 1px solid transparent;
-  border-radius: 0.25rem;
-}
-
-.alert-danger {
-  color: #842029;
-  background-color: #f8d7da;
-  border-color: #f5c2c7;
-}
-</style>

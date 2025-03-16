@@ -3,6 +3,7 @@ const { sequelize } = require("../models/postgres");
 const { Order, Payment, OrderItem, ShippingDetail, Product } = require("../models/postgres");
 const OrderMongo = require("../models/mongo/OrderMongo");
 const PaymentMongo = require("../models/mongo/PaymentMongo");
+const ProductMongo = require("../models/mongo/ProductMongo");
 
 const createCheckoutSession = async (req, res) => {
   try {
@@ -35,10 +36,17 @@ const createCheckoutSession = async (req, res) => {
         const product = await Product.findByPk(item.product_id, { transaction: t, lock: t.LOCK.UPDATE });
         if (!product) throw new Error(`Produit ${item.product_id} introuvable`);
         if (product.stock < item.quantity) {
-          throw new Error(`Stock insuffisant pour le produit ${product.name}`);
+          const err = new Error(`Stock insuffisant pour le produit ${product.name}`);
+          err.status = 403;
+          throw err;
         }
         product.stock -= item.quantity;
         await product.save({ transaction: t });
+
+        await ProductMongo.findOneAndUpdate(
+          { postgresId: item.product_id.toString() },
+          { $inc: { stock: -item.quantity } }
+        );
       }
 
       if (shipping_details) {
@@ -57,13 +65,10 @@ const createCheckoutSession = async (req, res) => {
 
       const lineItems = items.map((item) => {
         let desc = item.description ?? "";
-        const productData = {
-          name: item.name || "Sans nom",
-        };
+        const productData = { name: item.name || "Sans nom" };
         if (desc.trim() !== "") {
-          productData["description"] = desc;
+          productData.description = desc;
         }
-
         return {
           price_data: {
             currency: "eur",
@@ -112,7 +117,7 @@ const createCheckoutSession = async (req, res) => {
     });
   } catch (error) {
     console.error("Erreur lors de la création de la session Checkout", error);
-    res.status(500).json({ error: error.message });
+    res.status(error.status || 500).json({ error: error.message });
   }
 };
 
@@ -123,6 +128,7 @@ const handleWebhook = async (req, res) => {
   let event;
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    console.log("Webhook reçu:", event.type);
   } catch (err) {
     console.error(`Webhook signature invalide: ${err.message}`);
     return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -131,51 +137,58 @@ const handleWebhook = async (req, res) => {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object;
+      console.log("Session complétée reçue:", session.id);
       try {
         const order = await Order.findOne({
           where: { stripe_checkout_session_id: session.id },
         });
-        if (order) {
-          order.status = "paid";
-          order.payment_intent_id = session.payment_intent;
-          await order.save();
-
-          const payment = await Payment.create({
-            order_id: order.id,
-            amount: order.total_amount,
-            currency: "EUR",
-            payment_method: "card",
-            status: "succeeded",
-            stripe_payment_intent_id: session.payment_intent,
-            stripe_checkout_session_id: session.id,
-            receipt_url: session.receipt_url,
-          });
-
-          await OrderMongo.findOneAndUpdate(
-            { postgresId: order.id.toString() },
-            {
-              status: "paid",
-              payment_intent_id: session.payment_intent,
-            }
-          );
-
-          await PaymentMongo.create({
-            postgresId: payment.id.toString(),
-            order_id: order.id.toString(),
-            amount: parseFloat(payment.amount),
-            payment_method: payment.payment_method,
-            status: "completed",
-            stripe_payment_intent_id: payment.stripe_payment_intent_id,
-            stripe_checkout_session_id: payment.stripe_checkout_session_id,
-            receipt_url: payment.receipt_url,
-          });
+        if (!order) {
+          console.error("Aucun ordre trouvé pour session id:", session.id);
+          break;
         }
+        console.log("Order trouvé:", order.id);
+        order.status = "paid";
+        order.payment_intent_id = session.payment_intent;
+        await order.save();
+        console.log("Order mis à jour en 'paid'");
+
+        const payment = await Payment.create({
+          order_id: order.id,
+          amount: order.total_amount,
+          currency: "EUR",
+          payment_method: "card",
+          status: "succeeded",
+          stripe_payment_intent_id: session.payment_intent,
+          stripe_checkout_session_id: session.id,
+          receipt_url: session.receipt_url,
+        });
+        console.log("Payment créé:", payment.id);
+
+        await OrderMongo.findOneAndUpdate(
+          { postgresId: order.id.toString() },
+          {
+            status: "paid",
+            payment_intent_id: session.payment_intent,
+          }
+        );
+        console.log("OrderMongo mis à jour en 'paid'");
+
+        await PaymentMongo.create({
+          postgresId: payment.id.toString(),
+          order_id: order.id.toString(),
+          amount: parseFloat(payment.amount),
+          payment_method: payment.payment_method,
+          status: "completed",
+          stripe_payment_intent_id: payment.stripe_payment_intent_id,
+          stripe_checkout_session_id: payment.stripe_checkout_session_id,
+          receipt_url: payment.receipt_url,
+        });
+        console.log("PaymentMongo créé");
       } catch (error) {
-        console.error("Erreur webhook checkout.session.completed:", error);
+        console.error("Erreur dans webhook checkout.session.completed:", error);
       }
       break;
     }
-
     case "checkout.session.expired": {
       const session = event.data.object;
       try {
@@ -189,7 +202,6 @@ const handleWebhook = async (req, res) => {
               where: { order_id: order.id },
               transaction: t,
             });
-
             for (const item of items) {
               const product = await Product.findByPk(item.product_id, {
                 transaction: t,
@@ -200,19 +212,17 @@ const handleWebhook = async (req, res) => {
                 await product.save({ transaction: t });
               }
             }
-
             order.status = "canceled";
             await order.save({ transaction: t });
-
             await OrderMongo.findOneAndUpdate({ postgresId: order.id.toString() }, { status: "canceled" });
           });
+          console.log("Order annulé suite à expiration");
         }
       } catch (error) {
-        console.error("Erreur webhook checkout.session.expired:", error);
+        console.error("Erreur dans webhook checkout.session.expired:", error);
       }
       break;
     }
-
     case "payment_intent.payment_failed": {
       const paymentIntent = event.data.object;
       try {
@@ -226,7 +236,6 @@ const handleWebhook = async (req, res) => {
               where: { order_id: order.id },
               transaction: t,
             });
-
             for (const item of items) {
               const product = await Product.findByPk(item.product_id, {
                 transaction: t,
@@ -237,19 +246,17 @@ const handleWebhook = async (req, res) => {
                 await product.save({ transaction: t });
               }
             }
-
             order.status = "canceled";
             await order.save({ transaction: t });
-
             await OrderMongo.findOneAndUpdate({ postgresId: order.id.toString() }, { status: "canceled" });
           });
+          console.log("Order annulé suite à échec du paiement");
         }
       } catch (error) {
-        console.error("Erreur webhook payment_intent.payment_failed:", error);
+        console.error("Erreur dans webhook payment_intent.payment_failed:", error);
       }
       break;
     }
-
     default:
       console.log(`Événement non géré: ${event.type}`);
       break;

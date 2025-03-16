@@ -1,8 +1,8 @@
-import AdminPage from './pages/AdminPage.vue';
-import ManageUsers from './pages/ManageUsers.vue';
-import UserFormPage from './pages/UserFormPage.vue';
-import ManageProducts from './pages/ManageProducts.vue';
-import ProductFormPage from './pages/ProductFormPage.vue';
+import AdminPage from "./pages/AdminPage.vue";
+import ManageUsers from "./pages/ManageUsers.vue";
+import UserFormPage from "./pages/UserFormPage.vue";
+import ManageProducts from "./pages/ManageProducts.vue";
+import ProductFormPage from "./pages/ProductFormPage.vue";
 
 const routePageName = (baseName: string) => ({
   admin: `${baseName}-page`,
@@ -14,55 +14,50 @@ const routePageName = (baseName: string) => ({
   editProduct: `${baseName}-edit-product`,
 });
 
-const routes = routePageName('admin');
+const routesNames = routePageName("admin");
 
-const adminRoutes = () => [
-  // Route pour la page d'administration principale
+const adminRoutes = (): any[] => [
   {
-    path: '/admin',
-    name: routes.admin,
+    path: "/admin",
+    name: routesNames.admin,
     component: AdminPage,
-    meta: { requiresAuth: true, requiredRole: 'ROLE_ADMIN' },
+    meta: { requiresAuth: true, requiredRole: "ROLE_ADMIN" },
   },
-
-  // Routes pour la gestion des utilisateurs
   {
-    path: '/admin/users',
-    name: routes.users,
+    path: "/admin/users",
+    name: routesNames.users,
     component: ManageUsers,
-    meta: { requiresAuth: true, requiredRole: 'ROLE_ADMIN' },
+    meta: { requiresAuth: true, requiredRole: "ROLE_ADMIN" },
   },
   {
-    path: '/admin/users/add',
-    name: routes.addUser,
+    path: "/admin/users/add",
+    name: routesNames.addUser,
     component: UserFormPage,
-    meta: { requiresAuth: true, requiredRole: 'ROLE_ADMIN' },
+    meta: { requiresAuth: true, requiredRole: "ROLE_ADMIN" },
   },
   {
-    path: '/admin/users/:id',
-    name: routes.editUser,
+    path: "/admin/users/:id",
+    name: routesNames.editUser,
     component: UserFormPage,
-    meta: { requiresAuth: true, requiredRole: 'ROLE_ADMIN' },
+    meta: { requiresAuth: true, requiredRole: "ROLE_ADMIN" },
   },
-
-  // Routes pour la gestion des produits
   {
-    path: '/admin/products',
-    name: routes.products,
+    path: "/admin/products",
+    name: routesNames.products,
     component: ManageProducts,
-    meta: { requiresAuth: true, requiredRole: 'ROLE_ADMIN' },
+    meta: { requiresAuth: true, requiredRole: ["ROLE_ADMIN", "ROLE_STORE_KEEPER"] },
   },
   {
-    path: '/admin/products/add',
-    name: routes.addProduct,
+    path: "/admin/products/add",
+    name: routesNames.addProduct,
     component: ProductFormPage,
-    meta: { requiresAuth: true, requiredRole: 'ROLE_ADMIN' },
+    meta: { requiresAuth: true, requiredRole: "ROLE_ADMIN" },
   },
   {
-    path: '/admin/products/:id',
-    name: routes.editProduct,
+    path: "/admin/products/:id",
+    name: routesNames.editProduct,
     component: ProductFormPage,
-    meta: { requiresAuth: true, requiredRole: 'ROLE_ADMIN' },
+    meta: { requiresAuth: true, requiredRole: ["ROLE_ADMIN", "ROLE_STORE_KEEPER"] },
   },
 ];
 

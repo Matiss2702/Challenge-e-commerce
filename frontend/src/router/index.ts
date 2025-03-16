@@ -5,6 +5,7 @@ import authRoutes from "@/domains/auth/router";
 import productRoutes from "@/domains/product/router";
 import userRoutes from "@/domains/user/router";
 import { useAuthStore } from "@/stores/authStore";
+import NotFound from "@/domains/common/NotFound.vue";
 
 const routes = [
   {
@@ -12,6 +13,7 @@ const routes = [
     component: () => import("@/layouts/BaseLayout.vue"),
     children: [...homeRoutes(), ...adminRoutes(), ...authRoutes(), ...productRoutes(), ...userRoutes()],
   },
+  { path: "/:pathMatch(.*)*", name: "NotFound", component: NotFound },
 ];
 
 const router = createRouter({
@@ -36,8 +38,12 @@ router.beforeEach(async (to, from, next) => {
       return next({ name: "auth-login" });
     }
 
-    if (to.meta.requiredRole && !authStore.hasRole(to.meta.requiredRole as string)) {
-      return next({ name: "forbidden" });
+    if (to.meta.requiredRole) {
+      const requiredRoles = Array.isArray(to.meta.requiredRole) ? to.meta.requiredRole : [to.meta.requiredRole];
+      const hasRole = requiredRoles.some((role) => authStore.hasRole(role));
+      if (!hasRole) {
+        return next({ name: "NotFound" });
+      }
     }
   }
 

@@ -1,11 +1,13 @@
 <template>
-  <aside class="w-64 bg-white p-4 shadow-lg h-full">
+  <aside class="w-64 h-full p-4 bg-white shadow-lg">
+    <!-- Barre de recherche -->
     <div class="mb-4">
       <input
         v-model="searchTerm"
         type="text"
         placeholder="Rechercher un produit..."
         class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring focus:border-blue-300"
+        @input="$emit('filter-search', searchTerm)"
       />
     </div>
 
@@ -15,10 +17,10 @@
         <AccordionTrigger>Catégories</AccordionTrigger>
         <AccordionContent>
           <ul>
-            <li v-for="category in filteredCategories" :key="category as string">
-              <a 
-                href="#" 
-                class="text-gray-700 hover:text-blue-500 transition-colors duration-200"
+            <li v-for="category in filteredCategories" :key="category">
+              <a
+                href="#"
+                class="text-gray-700 transition-colors duration-200 hover:text-blue-500"
                 :class="{ 'font-bold text-blue-600': selectedCategories.includes(category) }"
                 @click.prevent="toggleCategory(category)"
               >
@@ -35,13 +37,13 @@
         <AccordionContent>
           <div class="flex items-center">
             <span class="mr-2">0€</span>
-            <input 
-              type="range" 
-              class="w-full mt-2 accent-blue-500" 
-              min="0" 
-              max="100" 
-              v-model="currentPrice" 
-              @input="emit('filter-price', currentPrice)" 
+            <input
+              type="range"
+              class="w-full mt-2 accent-blue-500"
+              min="0"
+              max="100"
+              v-model="currentPrice"
+              @input="emit('filter-price', currentPrice)"
             />
             <span class="ml-2">{{ currentPrice }}€</span>
           </div>
@@ -57,7 +59,13 @@
             <label for="avec-alcool" class="text-gray-700">Avec Alcool</label>
           </div>
           <div class="flex items-center">
-            <input type="radio" name="alcohol" id="sans-alcool" class="mr-2" @change="emit('filter-alcohol', 'without')" />
+            <input
+              type="radio"
+              name="alcohol"
+              id="sans-alcool"
+              class="mr-2"
+              @change="emit('filter-alcohol', 'without')"
+            />
             <label for="sans-alcool" class="text-gray-700">Sans Alcool</label>
           </div>
         </AccordionContent>
@@ -68,7 +76,12 @@
         <AccordionTrigger>En Stock</AccordionTrigger>
         <AccordionContent>
           <div class="flex items-center">
-            <input type="checkbox" id="en-stock" class="mr-2" @change="emit('filter-stock', ($event.target as HTMLInputElement).checked)" />
+            <input
+              type="checkbox"
+              id="en-stock"
+              class="mr-2"
+              @change="emit('filter-stock', ($event.target as HTMLInputElement).checked)"
+            />
             <label for="en-stock" class="text-gray-700">En Stock</label>
           </div>
         </AccordionContent>
@@ -78,30 +91,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import { ref, computed } from "vue";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
-// Déclaration des props avec typage explicite
-const props = defineProps<{
-  categories: string[]
-}>();
+const props = defineProps<{ categories: string[] }>();
+const emit = defineEmits(["filter-category", "filter-price", "filter-alcohol", "filter-stock", "filter-search"]);
 
-// Déclaration des événements
-const emit = defineEmits(['filter-category', 'filter-price', 'filter-alcohol', 'filter-stock']);
-
-// Variables locales
-const searchTerm = ref('');
+const searchTerm = ref("");
 const currentPrice = ref(100);
 const selectedCategories = ref<string[]>([]);
 
-// Méthode pour filtrer les catégories selon la recherche
 const filteredCategories = computed(() => {
-  return props.categories.filter(category =>
-    category.toLowerCase().includes(searchTerm.value.toLowerCase())
-  );
+  return props.categories.filter((category) => category.toLowerCase().includes(searchTerm.value.toLowerCase()));
 });
 
-// Fonction pour gérer le changement de catégorie
 const toggleCategory = (category: string) => {
   const index = selectedCategories.value.indexOf(category);
   if (index > -1) {
@@ -109,7 +112,7 @@ const toggleCategory = (category: string) => {
   } else {
     selectedCategories.value.push(category);
   }
-  emit('filter-category', [...selectedCategories.value]);
+  emit("filter-category", [...selectedCategories.value]);
 };
 </script>
 

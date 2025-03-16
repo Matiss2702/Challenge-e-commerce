@@ -53,6 +53,17 @@ module.exports = function (sequelize) {
       Product.hasMany(models.OrderItem, { foreignKey: "product_id" });
     }
   };
+  Product.afterUpdate(async (product, options) => {
+    const STOCK_THRESHOLD = 10;
+    if (product.stock < STOCK_THRESHOLD) {
+      try {
+        const { sendRestockAlerts } = require("../../services/alertService");
+        await sendRestockAlerts(product);
+      } catch (err) {
+        console.error("Erreur lors de l'envoi d'alerte de réapprovisionnement:", err);
+      }
+    }
+  });
 
   return Product;
 };

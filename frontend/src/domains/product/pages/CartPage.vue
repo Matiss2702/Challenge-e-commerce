@@ -1,10 +1,15 @@
 <template>
-  <div class="max-w-4xl px-4 py-8 mx-auto">
+  <div class="max-w-4xl px-4 py-8 mx-auto text-center">
     <h1 class="mb-6 text-3xl font-bold">Votre Panier</h1>
 
     <div v-if="!cart || cart.CartItems.length === 0" class="text-center text-gray-600">Votre panier est vide.</div>
+
     <div v-else>
-      <div v-for="item in cart.CartItems" :key="item.id" class="flex items-center justify-between py-4 border-b">
+      <div
+        v-for="item in cart.CartItems"
+        :key="item.id"
+        class="flex flex-col items-center justify-between py-4 border-b md:flex-row"
+      >
         <div class="flex items-center">
           <!-- Image du produit -->
           <img
@@ -12,22 +17,33 @@
             alt="Produit"
             class="object-cover w-20 h-20 mr-4 rounded-md"
           />
-          <div>
+          <div class="text-left">
             <h2 class="text-lg font-semibold">{{ item.Product?.name }}</h2>
             <p class="text-gray-500">{{ item.Product?.category }}</p>
-
-            <!-- Vérification de la valeur du prix -->
             <p>
               Prix HT : {{ formatPrice(item.Product?.price) }} €
               <span v-if="item.Product?.isAgeRestricted">(+ 20% TVA)</span>
               <span v-else>(+ 5.5% TVA)</span>
             </p>
-
-            <p>
-              {{ (typeof item.price === "string" ? parseFloat(item.price) : item.price).toFixed(2) }} € x
-              {{ item.quantity }}
-            </p>
+            <div class="mt-2">
+              <label class="mr-2">Quantité:</label>
+              <input
+                type="number"
+                min="1"
+                class="w-16 px-1 py-0.5 border rounded"
+                v-model.number="item.quantity"
+                @change="updateQuantity(item)"
+              />
+            </div>
           </div>
+        </div>
+        <div class="flex items-center mt-2 md:mt-0">
+          <p class="mr-4 text-lg font-bold">
+            {{ (typeof item.price === "string" ? parseFloat(item.price) : item.price).toFixed(2) }} €
+          </p>
+          <button @click="removeItem(item.id)" class="text-red-500" aria-label="Supprimer">
+            <TrashIcon class="w-6 h-6" />
+          </button>
         </div>
       </div>
 
@@ -58,11 +74,12 @@
 import { computed, onMounted, ref } from "vue";
 import { useCartStore, type CartItem } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/authStore";
+import { TrashIcon } from "lucide-vue-next";
+import { toast } from "@/components/ui/toast/use-toast";
 
 const cartStore = useCartStore();
 const authStore = useAuthStore();
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-
 const promoCode = ref("");
 
 onMounted(() => {
@@ -79,6 +96,23 @@ function clearCart() {
 function formatPrice(price: number | undefined | null): string {
   if (price === undefined || price === null) return "0.00";
   return parseFloat(price.toString()).toFixed(2);
+}
+
+async function updateQuantity(item: CartItem) {
+  try {
+    await cartStore.updateCartItem(item.id, item.quantity);
+  } catch (error: any) {
+    console.error("Erreur lors de la mise à jour de la quantité:", error);
+    toast({
+      title: "Erreur",
+      description: error.response?.data?.error || "Impossible de mettre à jour la quantité.",
+      variant: "destructive",
+    });
+  }
+}
+
+async function removeItem(itemId: number) {
+  await cartStore.removeCartItem(itemId);
 }
 
 async function checkout() {
@@ -118,11 +152,42 @@ async function checkout() {
     if (data.url) {
       window.location.href = data.url;
     } else {
-      alert("Erreur lors de la création de la session Stripe.");
+      toast({
+        title: "Erreur",
+        description: data.error || "Erreur lors de la création de la session Stripe.",
+        variant: "destructive",
+      });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erreur lors de la redirection vers Stripe:", error);
-    alert("Une erreur est survenue lors du paiement. Veuillez réessayer.");
+    toast({
+      title: "Erreur de paiement",
+      description: error.response?.data?.error || "Une erreur est survenue lors du paiement. Veuillez réessayer.",
+      variant: "destructive",
+    });
   }
 }
 </script>
+
+<style scoped>
+.admin-container {
+  max-width: 100%;
+  margin: 0 auto;
+}
+.admin-content {
+  padding: 20px;
+}
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+}
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+.pagination-controls button {
+  margin: 0 10px;
+}
+</style>

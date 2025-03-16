@@ -94,11 +94,11 @@ export const useCartStore = defineStore("cart", () => {
         description: `L'article ${itemId} est maintenant à ${newQuantity}.`,
         variant: "default",
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erreur updateCartItem:", err);
       toast({
         title: "Erreur",
-        description: "Impossible de mettre à jour la quantité.",
+        description: err.response?.data?.error || "Impossible de mettre à jour la quantité.",
         variant: "destructive",
       });
     }
