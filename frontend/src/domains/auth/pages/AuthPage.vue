@@ -1,59 +1,64 @@
 <template>
   <div class="flex justify-center">
-    <Tabs :defaultValue="currentTab" @value-change="handleTabChange">
-      <TabsList>
-        <TabsTrigger value="login">Connexion</TabsTrigger>
-        <TabsTrigger value="register">Inscription</TabsTrigger>
-      </TabsList>
-      <TabsContent value="login">
+    <div class="w-full max-w-md">
+      <div class="flex border-b">
+        <button
+          @click="currentTab = 'login'"
+          class="px-4 py-2 font-medium"
+          :class="{ 'border-b-2 border-blue-500 text-blue-600': currentTab === 'login' }"
+        >
+          Connexion
+        </button>
+        <button
+          @click="currentTab = 'register'"
+          class="px-4 py-2 font-medium"
+          :class="{ 'border-b-2 border-blue-500 text-blue-600': currentTab === 'register' }"
+        >
+          Inscription
+        </button>
+      </div>
+
+      <div v-if="currentTab === 'login'" class="mt-4">
         <FormComponent buttonLabel="Connexion" :isRegister="false" @submit="handleLogin" />
-      </TabsContent>
-      <TabsContent value="register">
-        <FormComponent :disabled="isSubmitting" buttonLabel="Inscription" :isRegister="true" @submit="handleRegister" />
-      </TabsContent>
-    </Tabs>
+        <div class="mt-2 text-center">
+          <RouterLink to="/request-reset-password" class="text-[#ff9800] hover:underline">
+            Mot de passe oublié ?
+          </RouterLink>
+        </div>
+      </div>
+
+      <div v-if="currentTab === 'register'" class="mt-4">
+        <FormComponent buttonLabel="Inscription" :isRegister="true" @submit="handleRegister" />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import FormComponent from "@/domains/auth/components/FormComponent.vue";
 import { useAuthStore } from "@/stores/authStore";
 
 const authStore = useAuthStore();
 const router = useRouter();
-const route = useRoute();
-
-const currentTab = ref(route.params.tab === "register" ? "register" : "login");
-const isSubmitting = ref(false);
-
-const handleTabChange = (value: string) => {
-  router.replace({ path: `/auth/${value}` });
-};
+const currentTab = ref("login");
 
 const handleRegister = async (data: any) => {
-  if (isSubmitting.value) return;
-  isSubmitting.value = true;
-
   try {
     await authStore.register(data);
+    router.push("/");
   } catch (error) {
-  } finally {
-    isSubmitting.value = false;
+    console.error("Registration error:", error);
   }
 };
 
 const handleLogin = async (data: any) => {
-  if (isSubmitting.value) return;
-  isSubmitting.value = true;
-
   try {
     await authStore.login(data);
+    router.push("/");
   } catch (error) {
-  } finally {
-    isSubmitting.value = false;
+    console.error("Login error:", error);
   }
 };
 </script>

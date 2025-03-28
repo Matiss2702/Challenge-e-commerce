@@ -5,13 +5,13 @@ import authRoutes from "@/domains/auth/router";
 import productRoutes from "@/domains/product/router";
 import userRoutes from "@/domains/user/router";
 import { useAuthStore } from "@/stores/authStore";
+import cguRoutes from "@/domains/common/router";
 import NotFound from "@/domains/common/NotFound.vue";
-
 const routes = [
   {
     path: "/",
     component: () => import("@/layouts/BaseLayout.vue"),
-    children: [...homeRoutes(), ...adminRoutes(), ...authRoutes(), ...productRoutes(), ...userRoutes()],
+    children: [...homeRoutes(), ...adminRoutes(), ...authRoutes(), ...productRoutes(), ...userRoutes(), ...cguRoutes()],
   },
   { path: "/:pathMatch(.*)*", name: "NotFound", component: NotFound },
 ];

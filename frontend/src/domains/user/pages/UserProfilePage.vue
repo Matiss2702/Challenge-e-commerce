@@ -7,10 +7,7 @@
           <label for="name">Nom</label>
           <input type="text" id="name" v-model="userData.name" required />
         </div>
-        <div class="form-group">
-          <label for="birthdate">Date de naissance</label>
-          <input type="date" id="birthdate" v-model="userData.birthdate" required />
-        </div>
+
         <div class="form-group">
           <label for="email">Email</label>
           <input type="email" id="email" v-model="userData.email" required />
@@ -29,7 +26,6 @@
             <input type="password" id="currentPassword" v-model="userData.currentPassword" required />
             <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
             <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
-
           </div>
           <div class="form-group">
             <label for="newPassword">Nouveau mot de passe</label>
@@ -48,12 +44,12 @@
   </div>
 </template>
 
-
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useAuthStore } from '@/stores/authStore';
-import { useRouter } from 'vue-router';
-import axios from 'axios';
+import { ref, onMounted } from "vue";
+import { useAuthStore } from "@/stores/authStore";
+import { useRouter } from "vue-router";
+import axios from "axios";
+import { toast } from "@/components/ui/toast/use-toast";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -64,7 +60,6 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const errorMessage = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
 
-// Initialisation des données utilisateur
 interface UserProfile {
   name: string;
   birthdate: string;
@@ -75,12 +70,12 @@ interface UserProfile {
 }
 
 const userData = ref<UserProfile>({
-  name: '',
-  birthdate: '',
-  email: '',
-  currentPassword: '',
-  newPassword: '',
-  postgresId: '',
+  name: "",
+  birthdate: "",
+  email: "",
+  currentPassword: "",
+  newPassword: "",
+  postgresId: "",
 });
 
 onMounted(async () => {
@@ -89,83 +84,84 @@ onMounted(async () => {
       await authStore.fetchUser();
       user.value = authStore.user;
     } catch (error) {
-      console.error('Erreur lors de la récupération du profil utilisateur:', error);
+      console.error("Erreur lors de la récupération du profil utilisateur:", error);
     }
   }
   if (user.value) {
     userData.value = {
       name: user.value.name,
-      birthdate: new Date(user.value.birthdate).toISOString().split('T')[0],
+      birthdate: new Date(user.value.birthdate).toISOString().split("T")[0],
       email: user.value.email,
       postgresId: user.value.postgresId,
-      currentPassword: '',
-      newPassword: '',
+      currentPassword: "",
+      newPassword: "",
     };
   }
 });
 
-
 const updateProfile = async () => {
   try {
-    // Réinitialiser les messages à chaque nouvelle tentative
-    errorMessage.value = null;
-    successMessage.value = null;
-
     if (!user.value || !userData.value.postgresId) {
-      errorMessage.value = 'Impossible de récupérer les informations de l\'utilisateur.';
+      toast({
+        title: "Erreur",
+        description: "Impossible de récupérer les informations de l'utilisateur.",
+        variant: "destructive",
+      });
       return;
     }
 
     const payload: UserProfile = { ...userData.value };
 
-    // Vérifier si la modification de mot de passe est activée
     if (isPasswordChangeEnabled.value) {
       if (!payload.currentPassword || !payload.newPassword) {
-        errorMessage.value = 'Veuillez remplir les deux champs pour changer le mot de passe.';
+        toast({
+          title: "Champs manquants",
+          description: "Veuillez remplir les deux champs pour changer le mot de passe.",
+          variant: "destructive",
+        });
         return;
       }
     } else {
-      // Si pas de changement de mot de passe, supprimer ces champs
       delete payload.currentPassword;
       delete payload.newPassword;
     }
 
-    // Récupérer le token d'authentification depuis le store (ou localStorage/cookies)
     const token = authStore.token;
 
     if (!token) {
-      errorMessage.value = 'Vous devez être authentifié pour mettre à jour le profil.';
+      toast({
+        title: "Non authentifié",
+        description: "Vous devez être connecté pour effectuer cette action.",
+        variant: "destructive",
+      });
       return;
     }
 
-    // Ajouter le token dans l'en-tête de la requête
-    const response = await axios.put(
-      `${apiBaseUrl}/api/users/profile/${userData.value.postgresId}`,
-      payload,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      }
-    );
+    await axios.put(`${apiBaseUrl}/api/users/profile/${userData.value.postgresId}`, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-    successMessage.value = 'Votre profil a été mis à jour avec succès.';
+    toast({
+      title: "Profil mis à jour",
+      description: "Votre profil a été mis à jour avec succès.",
+      variant: "default",
+    });
 
-    // Actualiser l'utilisateur dans le store après la mise à jour
     await authStore.fetchUser();
   } catch (err: any) {
-    if (err.response && err.response.data && err.response.data.message) {
-      errorMessage.value = err.response.data.message;
-    } else {
-      errorMessage.value = 'Erreur lors de la mise à jour du profil.';
-    }
+    toast({
+      title: "Erreur",
+      description: err.response?.data?.message || "Erreur lors de la mise à jour du profil.",
+      variant: "destructive",
+    });
   }
 };
 
-
 const handleLogout = () => {
   authStore.logout();
-  router.push('/');
+  router.push("/");
 };
 </script>
 

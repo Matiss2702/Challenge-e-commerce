@@ -1,18 +1,17 @@
 import AuthPage from "./pages/AuthPage.vue";
 import VerifyAccountPage from "./pages/VerifyAccountPage.vue";
 import CheckMailPage from "./pages/CheckMailPage.vue";
-
-const routePageName = (baseName: string) => ({
-  auth: `${baseName}-auth`,
-  verify: `${baseName}-verify`,
-});
+import RequestResetPassword from "./pages/RequestResetPassword.vue";
+import ResetPassword from "./pages/ResetPassword.vue";
+import { RouteLocationNormalized } from "vue-router";
 
 const authRoutes = () => [
   {
     path: "/auth",
-    name: routePageName("auth").auth,
+    name: "auth",
     component: AuthPage,
     props: true,
+    meta: { requiresAuth: false },
   },
   {
     path: "/verify-account",
@@ -26,6 +25,24 @@ const authRoutes = () => [
     name: "check-email",
     component: CheckMailPage,
     props: true,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: "/request-reset-password",
+    name: "request-reset-password",
+    component: RequestResetPassword,
+    props: true,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: "/reset-password",
+    name: "reset-password",
+    component: ResetPassword,
+    beforeEnter: () => {
+      console.log("Entering /reset-password");
+      return true;
+    },
+    props: (route: RouteLocationNormalized) => ({ token: route.query.token }),
     meta: { requiresAuth: false },
   },
 ];

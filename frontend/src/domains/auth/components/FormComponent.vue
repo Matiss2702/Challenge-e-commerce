@@ -1,70 +1,118 @@
 <template>
-  <form @submit.prevent="handleSubmit">
-    <div v-if="isRegister">
-      <input v-model="formData.name" type="text" placeholder="Nom" required class="border p-2 rounded mb-2" />
-      <p v-if="errors.name" class="text-red-500">{{ errors.name }}</p>
-    </div>
-    <div v-if="isRegister">
-      <input v-model="formData.birthdate" type="date" placeholder="Date de naissance" required class="border p-2 rounded mb-2" />
-      <p v-if="errors.birthdate" class="text-red-500">{{ errors.birthdate }}</p>
-    </div>
-    <div>
-      <input v-model="formData.email" type="email" placeholder="Email" required class="border p-2 rounded mb-2" />
-      <p v-if="errors.email" class="text-red-500">{{ errors.email }}</p>
-    </div>
-    <div class="relative">
-      <input :type="passwordFieldType" v-model="formData.password" placeholder="Mot de passe" required class="border p-2 rounded mb-2 w-full pr-10" />
-      <p v-if="errors.password" class="text-red-500">{{ errors.password }}</p>
-      <button type="button" @click="togglePasswordVisibility" class="absolute right-3 top-2">
-        <span v-if="isPasswordVisible">👁️</span>
-        <span v-else>🙈</span>
-      </button>
+  <form @submit.prevent="handleSubmit" class="max-w-md p-6 mx-auto space-y-4 bg-white rounded-md shadow">
+    <!-- CHAMP NOM -->
+    <div v-if="isRegister" class="space-y-1">
+      <label class="block text-sm font-semibold text-gray-700">Nom</label>
+      <input
+        v-model="formData.name"
+        placeholder="Votre nom"
+        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#ff9800]"
+        :class="{ 'border-red-500 ring-red-300': errors.name }"
+      />
+      <p v-if="errors.name" class="text-sm text-red-500">{{ errors.name }}</p>
     </div>
 
-    <div class="flex items-center mb-2">
-      <input v-model="formData.acceptRGPD" type="checkbox" required class="mr-2" />
-      <label for="acceptRGPD" class="text-sm">J'accepte les conditions RGPD</label>
-      <p v-if="errors.acceptRGPD" class="text-red-500">{{ errors.acceptRGPD }}</p>
+    <!-- DATE DE NAISSANCE -->
+    <div v-if="isRegister" class="space-y-1">
+      <label class="block text-sm font-semibold text-gray-700">Date de naissance</label>
+      <input
+        v-model="formData.birthdate"
+        type="date"
+        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#ff9800]"
+        :class="{ 'border-red-500 ring-red-300': errors.birthdate }"
+      />
+      <p v-if="errors.birthdate" class="text-sm text-red-500">{{ errors.birthdate }}</p>
     </div>
-    <button type="submit" :disabled="!formData.acceptRGPD" class="bg-green-500 text-white px-4 py-2 rounded">
-      {{ buttonLabel }}
+
+    <!-- EMAIL -->
+    <div class="space-y-1">
+      <label class="block text-sm font-semibold text-gray-700">Email</label>
+      <input
+        v-model="formData.email"
+        type="email"
+        placeholder="exemple@mail.com"
+        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#ff9800]"
+        :class="{ 'border-red-500 ring-red-300': errors.email }"
+      />
+      <p v-if="errors.email" class="text-sm text-red-500">{{ errors.email }}</p>
+    </div>
+
+    <!-- MOT DE PASSE -->
+    <div class="space-y-1">
+      <label class="block text-sm font-semibold text-gray-700">Mot de passe</label>
+      <input
+        v-model="formData.password"
+        type="password"
+        class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#ff9800]"
+        :class="{ 'border-red-500 ring-red-300': errors.password }"
+      />
+      <p v-if="errors.password" class="text-sm text-red-500">{{ errors.password }}</p>
+    </div>
+
+    <!-- RGPD -->
+    <div v-if="isRegister" class="space-y-1">
+      <div class="flex items-center gap-2">
+        <input
+          id="cgu"
+          type="checkbox"
+          v-model="formData.acceptRGPD"
+          class="w-4 h-4 border border-gray-300 rounded focus:ring-2 focus:ring-[#ff9800]"
+          :class="{ 'border-red-500 ring-red-300': errors.acceptRGPD }"
+        />
+        <label for="cgu" class="text-sm text-gray-700">
+          J'accepte les
+          <RouterLink to="/cgu" class="text-[#ff9800] hover:underline"> Conditions Générales d'Utilisation </RouterLink>
+        </label>
+      </div>
+      <p v-if="errors.acceptRGPD" class="text-sm text-red-500">{{ errors.acceptRGPD }}</p>
+    </div>
+
+    <!-- BOUTON -->
+    <button
+      type="submit"
+      class="w-full px-4 py-2 font-semibold text-white bg-[#ff9800] rounded hover:bg-[#e68a00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ff9800] disabled:bg-gray-400"
+      :disabled="isSubmitting"
+    >
+      {{ isSubmitting ? "Traitement..." : buttonLabel }}
     </button>
   </form>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, defineProps, defineEmits } from 'vue';
-import useFormValidation from '@/domains/auth/composables/useFormValidations';
+import { ref } from "vue";
+import { RouterLink } from "vue-router";
+import useFormValidation from "@/domains/auth/composables/useFormValidations";
 
-const props = defineProps({
-  buttonLabel: String,
-  onSubmit: Function,
-  isRegister: Boolean
-});
+const props = defineProps<{
+  isRegister: boolean;
+  buttonLabel: string;
+}>();
 
-const emits = defineEmits(['submit']);
+const emit = defineEmits<{
+  (e: "submit", data: any): void;
+}>();
+
+const { errors, validateForm } = useFormValidation();
+const isSubmitting = ref(false);
 
 const formData = ref({
-  name: '',
-  birthdate: '',
-  email: '',
-  password: '',
-  acceptRGPD: false
+  name: "",
+  birthdate: "",
+  email: "",
+  password: "",
+  acceptRGPD: false,
 });
 
-const { errors, validateForm } = useFormValidation(formData, props.isRegister);
+const handleSubmit = async () => {
+  const isValid = validateForm(formData.value, props.isRegister);
 
-const isPasswordVisible = ref(false);
-const passwordFieldType = computed(() => (isPasswordVisible.value ? 'text' : 'password'));
+  if (!isValid) return;
 
-const togglePasswordVisibility = () => {
-  isPasswordVisible.value = !isPasswordVisible.value;
-};
-
-const handleSubmit = () => {
-  if (validateForm()) {
-    emits('submit', formData.value);
-    props.onSubmit && props.onSubmit(formData.value);
+  isSubmitting.value = true;
+  try {
+    await emit("submit", formData.value);
+  } finally {
+    isSubmitting.value = false;
   }
 };
 </script>

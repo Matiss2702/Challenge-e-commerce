@@ -49,93 +49,43 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits, watch } from "vue";
+import { defineProps, defineEmits } from "vue";
+import { useUserForm } from "@/domains/admin/composables/useUserForm";
+import axios from "axios";
+import { toast } from "@/components/ui/toast/use-toast";
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
 const props = defineProps({
   user: Object,
   isEditMode: Boolean,
 });
-
 const emit = defineEmits(["submit", "cancel"]);
 
-const form = ref({
-  id: null,
-  name: "",
-  email: "",
-  birthdate: "",
-  role: "ROLE_USER",
-  password: "",
-  passwordReset: false,
-});
+const { form, errors, validateForm } = useUserForm(props);
 
-const errors = ref({
-  name: "",
-  email: "",
-  birthdate: "",
-  role: "",
-  password: "",
-});
-
-watch(
-  () => props.user,
-  (newUser) => {
-    if (newUser) {
-      let birthdate = "";
-      if (newUser.birthdate && !isNaN(new Date(newUser.birthdate).getTime())) {
-        birthdate = new Date(newUser.birthdate).toISOString().split("T")[0];
-      }
-      form.value = { ...newUser, birthdate, passwordReset: false };
-    } else {
-      form.value = {
-        id: null,
-        name: "",
-        email: "",
-        birthdate: "",
-        role: "ROLE_USER",
-        password: "",
-        passwordReset: false,
-      };
-    }
-  },
-  { immediate: true }
-);
-
-const submitForm = () => {
+const submitForm = async () => {
   if (validateForm()) {
+    if (form.value.passwordReset && props.isEditMode) {
+      try {
+        await axios.post(`${apiBaseUrl}/api/auth/request-reset`, {
+          email: form.value.email,
+        });
+        toast({
+          title: "Lien envoyé",
+          description: `Le lien de réinitialisation a été envoyé à ${form.value.email}.`,
+          variant: "default",
+        });
+      } catch (err) {
+        toast({
+          title: "Erreur",
+          description: err.response?.data?.message || "Impossible d'envoyer l'email de réinitialisation.",
+          variant: "destructive",
+        });
+      }
+    }
+
     emit("submit", { ...form.value });
   }
-};
-
-const validateForm = () => {
-  errors.value = { name: "", email: "", birthdate: "", role: "", password: "" };
-  let isValid = true;
-
-  if (!form.value.name || form.value.name.length < 3) {
-    errors.value.name = "Le nom doit contenir au moins 3 caractères";
-    isValid = false;
-  }
-
-  const emailRegex = /\S+@\S+\.\S+/;
-  if (!form.value.email || !emailRegex.test(form.value.email)) {
-    errors.value.email = "Adresse email invalide";
-    isValid = false;
-  }
-
-  if (!form.value.birthdate) {
-    errors.value.birthdate = "Veuillez fournir une date de naissance valide";
-    isValid = false;
-  }
-
-  if (!form.value.role) {
-    errors.value.role = "Veuillez choisir un rôle";
-    isValid = false;
-  }
-
-  if (!props.isEditMode && (!form.value.password || form.value.password.length < 6)) {
-    errors.value.password = "Le mot de passe doit contenir au moins 6 caractères";
-    isValid = false;
-  }
-
-  return isValid;
 };
 </script>

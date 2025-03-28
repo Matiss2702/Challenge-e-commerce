@@ -11,6 +11,7 @@ dotenv.config();
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 const JWT_SECRET = process.env.JWT_SECRET;
+const RESET_PASSWORD_EXPIRES_IN = "15m";
 
 exports.register = async (req, res) => {
   try {
@@ -145,6 +146,74 @@ exports.verifyAccount = async (req, res) => {
       return res.status(400).json({ message: "Invalid or malformed token" });
     }
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email requis" });
+    }
+
+    const user = await UserMongo.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "Aucun utilisateur trouvé avec cet email" });
+    }
+
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: RESET_PASSWORD_EXPIRES_IN });
+
+    const resetLink = `${FRONTEND_URL}/reset-password?token=${token}`;
+    const html = `
+      <h2>Réinitialisation du mot de passe</h2>
+      <p>Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :</p>
+      <a href="${resetLink}">${resetLink}</a>
+      <p><small>Ce lien expirera dans 15 minutes.</small></p>
+    `;
+
+    await sendEmail(user.email, "Réinitialisation du mot de passe", html);
+
+    return res.status(200).json({ message: "Email de réinitialisation envoyé." });
+  } catch (error) {
+    console.error("Erreur lors de la demande de reset password:", error);
+    return res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+/**
+ * Réinitialiser le mot de passe
+ */
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ message: "Token et nouveau mot de passe requis" });
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userMongo = await UserMongo.findById(decoded.id);
+    if (!userMongo) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    userMongo.password = hashedPassword;
+    await userMongo.save();
+
+    // Synchroniser avec Postgres
+    await User.update({ password: hashedPassword }, { where: { id: userMongo.postgresId } });
+
+    return res.status(200).json({ message: "Mot de passe mis à jour avec succès." });
+  } catch (error) {
+    console.error("Erreur lors de la réinitialisation du mot de passe:", error);
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Lien expiré. Merci de recommencer." });
+    }
+    return res.status(500).json({ message: "Erreur serveur" });
   }
 };
 

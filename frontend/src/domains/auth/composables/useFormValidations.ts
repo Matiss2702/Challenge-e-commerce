@@ -1,34 +1,39 @@
-import { ref } from 'vue';
+import { ref } from "vue";
 
-export default function useFormValidation(formData: any, isRegister: boolean) {
+export default function useFormValidation() {
   const errors = ref<{ [key: string]: string }>({});
 
-  const validateForm = () => {
+  const validateForm = (formData: any, isRegister: boolean) => {
     errors.value = {};
 
-    if (!formData.value.email) {
+    // Validation email
+    if (!formData.email) {
       errors.value.email = "L'email est requis.";
-    } else if (!/\S+@\S+\.\S+/.test(formData.value.email)) {
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       errors.value.email = "L'email n'est pas valide.";
     }
 
-    if (!formData.value.password) {
-      errors.value.password = 'Le mot de passe est requis.';
-    } else if (formData.value.password.length < 6) {
-      errors.value.password = 'Le mot de passe doit contenir au moins 6 caractères.';
+    // Validation mot de passe
+    if (!formData.password) {
+      errors.value.password = "Le mot de passe est requis.";
+    } else if (formData.password.length < 6) {
+      errors.value.password = "Le mot de passe doit contenir au moins 6 caractères.";
     }
 
-    if (!formData.value.acceptRGPD) {
-      errors.value.acceptRGPD = 'Vous devez accepter les conditions RGPD.';
-    }
-
+    // Validation champs spécifiques à l'inscription
     if (isRegister) {
-      if (!formData.value.name) {
-        errors.value.name = 'Le nom est requis.';
+      if (!formData.name) {
+        errors.value.name = "Le nom est requis.";
+      } else if (formData.name.length < 2) {
+        errors.value.name = "Le nom doit contenir au moins 2 caractères.";
       }
 
-      if (!formData.value.birthdate) {
-        errors.value.birthdate = 'La date de naissance est requise.';
+      if (!formData.birthdate) {
+        errors.value.birthdate = "La date de naissance est requise.";
+      }
+
+      if (!formData.acceptRGPD) {
+        errors.value.acceptRGPD = "Vous devez accepter les conditions RGPD.";
       }
     }
 
@@ -37,6 +42,6 @@ export default function useFormValidation(formData: any, isRegister: boolean) {
 
   return {
     errors,
-    validateForm
+    validateForm,
   };
 }

@@ -14,6 +14,7 @@ import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
 import UserForm from "@/domains/admin/components/UserForm.vue";
 import AdminSidebar from "@/domains/navigation/components/TheAdminSidebar.vue";
+import { toast } from "@/components/ui/toast/use-toast";
 
 interface User {
   id: number;
@@ -45,10 +46,14 @@ onMounted(async () => {
 
       if (response.data) {
         user.value = response.data.postgresData;
-      } else {
       }
     } catch (error) {
       console.error("Error loading user data:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger l'utilisateur.",
+        variant: "destructive",
+      });
     }
   } else {
     isEditMode.value = false;
@@ -71,15 +76,32 @@ const handleUserFormSubmit = async (userData: User) => {
           Authorization: `Bearer ${token}`,
         },
       });
+      toast({
+        title: "Utilisateur modifié",
+        description: "Les informations ont été mises à jour avec succès.",
+        variant: "default",
+      });
     } else {
       await axios.post(`${apiBaseUrl}/api/users`, userData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+      toast({
+        title: "Utilisateur ajouté",
+        description: "L'utilisateur a été créé avec succès.",
+        variant: "default",
+      });
     }
     router.push("/admin/users");
-  } catch (error) {}
+  } catch (error: any) {
+    console.error("Erreur lors de la sauvegarde :", error);
+    toast({
+      title: "Erreur",
+      description: error.response?.data?.message || "Une erreur s'est produite.",
+      variant: "destructive",
+    });
+  }
 };
 
 const goBack = () => {
