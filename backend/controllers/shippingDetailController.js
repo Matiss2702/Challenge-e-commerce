@@ -1,6 +1,6 @@
-const ShippingDetailPostgres = require('../models/postgres/ShippingDetail');
-const ShippingDetailMongo = require('../models/mongo/ShippingDetailMongo');
-const shippingDetailSchema = require('../schemas/shippingDetailSchema');
+const ShippingDetailPostgres = require("../models/postgres/ShippingDetail");
+const ShippingDetailMongo = require("../models/mongo/ShippingDetailMongo");
+const shippingDetailSchema = require("../schemas/shippingDetailSchema");
 
 exports.getAllShippingDetails = async (req, res) => {
   try {
@@ -19,7 +19,14 @@ exports.createShippingDetail = async (req, res) => {
     }
 
     const { order_id, address, city, postal_code, country, shipping_method } = validation.data;
-    const newShippingDetailPostgres = await ShippingDetailPostgres.create({ order_id, address, city, postal_code, country, shipping_method });
+    const newShippingDetailPostgres = await ShippingDetailPostgres.create({
+      order_id,
+      address,
+      city,
+      postal_code,
+      country,
+      shipping_method,
+    });
 
     const newShippingDetailMongo = new ShippingDetailMongo({
       postgresId: newShippingDetailPostgres.id,
@@ -49,7 +56,7 @@ exports.updateShippingDetail = async (req, res) => {
 
     const shippingDetailPostgres = await ShippingDetailPostgres.findByPk(req.params.id);
     if (!shippingDetailPostgres) {
-      return res.status(404).json({ message: 'Shipping detail not found' });
+      return res.status(404).json({ message: "Shipping detail not found" });
     }
 
     shippingDetailPostgres.order_id = order_id;
@@ -75,13 +82,13 @@ exports.deleteShippingDetail = async (req, res) => {
   try {
     const shippingDetailPostgres = await ShippingDetailPostgres.findByPk(req.params.id);
     if (!shippingDetailPostgres) {
-      return res.status(404).json({ message: 'Shipping detail not found' });
+      return res.status(404).json({ message: "Shipping detail not found" });
     }
 
     await shippingDetailPostgres.destroy();
     await ShippingDetailMongo.findOneAndDelete({ postgresId: shippingDetailPostgres.id });
 
-    res.json({ message: 'Shipping detail deleted' });
+    res.json({ message: "Shipping detail deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

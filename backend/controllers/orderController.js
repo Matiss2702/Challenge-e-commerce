@@ -1,9 +1,12 @@
-const OrderPostgres = require('../models/postgres/Order');
-const OrderMongo = require('../models/mongo/OrderMongo');
-const orderSchema = require('../schemas/orderSchema');
+const OrderPostgres = require("../models/postgres/Order");
+const { Product } = require("../models/postgres");
+
+const OrderMongo = require("../models/mongo/OrderMongo");
+const orderSchema = require("../schemas/orderSchema");
 
 exports.getAllOrders = async (req, res) => {
   try {
+    // On récupère toutes les commandes côté Mongo
     const orders = await OrderMongo.find();
     res.json(orders);
   } catch (err) {
@@ -11,6 +14,47 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
+exports.getUserOrdersController = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const orders = await OrderMongo.find({ user_id: userId.toString() });
+
+    const detailedOrders = [];
+
+    for (const order of orders) {
+      const newOrder = {
+        ...order.toObject(),
+        items: [],
+      };
+
+      for (const item of order.items) {
+        const product = await Product.findByPk(item.product_id);
+
+        let name = "Nom inconnu";
+        let imagePath = null;
+        if (product) {
+          name = product.name;
+          imagePath = product.imagePath;
+        }
+
+        newOrder.items.push({
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price: item.price,
+          name,
+          imagePath,
+        });
+      }
+
+      detailedOrders.push(newOrder);
+    }
+
+    res.json(detailedOrders);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+};
 exports.createOrder = async (req, res) => {
   try {
     const validation = orderSchema.safeParse(req.body);
@@ -19,7 +63,12 @@ exports.createOrder = async (req, res) => {
     }
 
     const { user_id, total_amount, status, items } = validation.data;
-    const newOrderPostgres = await OrderPostgres.create({ user_id, total_amount, status });
+
+    const newOrderPostgres = await OrderPostgres.create({
+      user_id,
+      total_amount,
+      status,
+    });
 
     const newOrderMongo = new OrderMongo({
       postgresId: newOrderPostgres.id,
@@ -47,7 +96,7 @@ exports.updateOrder = async (req, res) => {
 
     const orderPostgres = await OrderPostgres.findByPk(req.params.id);
     if (!orderPostgres) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({ message: "Order not found" });
     }
 
     orderPostgres.user_id = user_id;
@@ -55,10 +104,7 @@ exports.updateOrder = async (req, res) => {
     orderPostgres.status = status;
     await orderPostgres.save();
 
-    await OrderMongo.findOneAndUpdate(
-      { postgresId: orderPostgres.id },
-      { user_id, total_amount, status, items }
-    );
+    await OrderMongo.findOneAndUpdate({ postgresId: orderPostgres.id }, { user_id, total_amount, status, items });
 
     res.json(orderPostgres);
   } catch (err) {
@@ -67,18 +113,17 @@ exports.updateOrder = async (req, res) => {
 };
 
 exports.deleteOrder = async (req, res) => {
-    try {
-      const orderPostgres = await OrderPostgres.findByPk(req.params.id);
-      if (!orderPostgres) {
-        return res.status(404).json({ message: 'Order not found' });
-      }
-  
-      await orderPostgres.destroy();
-      await OrderMongo.findOneAndDelete({ postgresId: orderPostgres.id });
-  
-      res.json({ message: 'Order deleted' });
-    } catch (err) {
-      res.status(500).json({ message: err.message });
+  try {
+    const orderPostgres = await OrderPostgres.findByPk(req.params.id);
+    if (!orderPostgres) {
+      return res.status(404).json({ message: "Order not found" });
     }
-  };
-  
+
+    await orderPostgres.destroy();
+    await OrderMongo.findOneAndDelete({ postgresId: orderPostgres.id });
+
+    res.json({ message: "Order deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

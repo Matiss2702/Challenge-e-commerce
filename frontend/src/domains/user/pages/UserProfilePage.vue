@@ -1,8 +1,9 @@
 <template>
   <div class="profile-container">
-    <h1>Profile</h1>
+    <h1 class="title">Mon Profil</h1>
+
     <div v-if="user">
-      <form @submit.prevent="updateProfile">
+      <form @submit.prevent="updateProfile" class="profile-form">
         <div class="form-group">
           <label for="name">Nom</label>
           <input type="text" id="name" v-model="userData.name" required />
@@ -13,31 +14,35 @@
           <input type="email" id="email" v-model="userData.email" required />
         </div>
 
-        <!-- Changer le mot de passe: label et checkbox sur la même ligne -->
         <div class="form-group-checkbox">
           <label for="changePassword" class="label-inline">Changer le mot de passe</label>
           <input type="checkbox" id="changePassword" v-model="isPasswordChangeEnabled" />
         </div>
 
-        <!-- Si changement de mot de passe activé, afficher les inputs du mot de passe -->
         <div v-if="isPasswordChangeEnabled">
           <div class="form-group">
             <label for="currentPassword">Ancien mot de passe</label>
             <input type="password" id="currentPassword" v-model="userData.currentPassword" required />
-            <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
-            <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
           </div>
+
           <div class="form-group">
             <label for="newPassword">Nouveau mot de passe</label>
             <input type="password" id="newPassword" v-model="userData.newPassword" required />
           </div>
         </div>
 
-        <!-- Inverser les boutons avec espacement -->
-        <button @click="handleLogout" class="btn-secondary">Déconnexion</button>
-        <button type="submit" class="btn-primary">Mettre à jour</button>
+        <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
+        <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
+
+        <div class="button-group">
+          <button type="submit" class="btn-primary">Mettre à jour</button>
+          <button type="button" class="btn-secondary" @click="handleLogout">Déconnexion</button>
+        </div>
+
+        <button type="button" class="btn-link" @click="goToOrderHistory">Voir l'historique de mes commandes</button>
       </form>
     </div>
+
     <div v-else>
       <p>Chargement des informations...</p>
     </div>
@@ -77,6 +82,10 @@ const userData = ref<UserProfile>({
   newPassword: "",
   postgresId: "",
 });
+
+const goToOrderHistory = () => {
+  router.push("/my-orders");
+};
 
 onMounted(async () => {
   if (!user.value) {
@@ -166,32 +175,40 @@ const handleLogout = () => {
 </script>
 
 <style scoped>
-/* Styles généraux */
 .profile-container {
   max-width: 600px;
-  margin: 0 auto;
-  padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 10px;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #fffdfa;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
 }
 
-/* Styles pour les champs de formulaire (inputs en colonne) */
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+  color: #333;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 input {
   padding: 10px;
-  border-radius: 5px;
+  border-radius: 6px;
   border: 1px solid #ccc;
-  width: 100%;
-  box-sizing: border-box;
+  font-size: 1rem;
 }
 
-/* Styles pour la checkbox et le label sur la même ligne */
 .form-group-checkbox {
   display: flex;
   align-items: center;
@@ -199,47 +216,65 @@ input {
 }
 
 .label-inline {
-  flex-grow: 0;
-  margin-right: 5px;
-  text-align: left;
+  margin-right: 10px;
+  font-weight: 500;
 }
 
 input[type="checkbox"] {
-  margin-left: 5px;
-  width: auto;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
 }
 
-/* Espacement supplémentaire entre les boutons */
-button {
-  padding: 10px 20px;
-  background-color: #ff9800;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1rem;
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
   margin-top: 20px;
 }
 
-button:hover {
-  background-color: #e68a00;
+button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
 .btn-primary {
   background-color: #ff9800;
-  margin-left: 20px;
+  color: white;
+  border: none;
+}
+
+.btn-primary:hover {
+  background-color: #e68a00;
 }
 
 .btn-secondary {
   background-color: #f44336;
+  color: white;
+  border: none;
 }
 
-button:focus,
-input:focus {
-  outline: none;
-  border: 2px solid #ff9800;
+.btn-secondary:hover {
+  background-color: #d32f2f;
+}
+
+.btn-link {
+  margin-top: 15px;
+  background: none;
+  border: none;
+  color: #ff9800;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: bold;
+  align-self: flex-start;
+}
+
+.btn-link:hover {
+  color: #e68a00;
 }
 
 .error-message {
@@ -247,6 +282,7 @@ input:focus {
   background-color: #fdd;
   padding: 10px;
   border-radius: 5px;
+  margin-top: -10px;
   margin-bottom: 10px;
 }
 
@@ -255,6 +291,7 @@ input:focus {
   background-color: #ddf;
   padding: 10px;
   border-radius: 5px;
+  margin-top: -10px;
   margin-bottom: 10px;
 }
 </style>

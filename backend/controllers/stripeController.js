@@ -147,6 +147,7 @@ const handleWebhook = async (req, res) => {
           break;
         }
         console.log("Order trouvé:", order.id);
+
         order.status = "paid";
         order.payment_intent_id = session.payment_intent;
         await order.save();
@@ -189,6 +190,7 @@ const handleWebhook = async (req, res) => {
       }
       break;
     }
+
     case "checkout.session.expired": {
       const session = event.data.object;
       try {
@@ -211,6 +213,10 @@ const handleWebhook = async (req, res) => {
                 product.stock += item.quantity;
                 await product.save({ transaction: t });
               }
+              await ProductMongo.findOneAndUpdate(
+                { postgresId: item.product_id.toString() },
+                { $inc: { stock: item.quantity } }
+              );
             }
             order.status = "canceled";
             await order.save({ transaction: t });
@@ -223,6 +229,7 @@ const handleWebhook = async (req, res) => {
       }
       break;
     }
+
     case "payment_intent.payment_failed": {
       const paymentIntent = event.data.object;
       try {
@@ -245,6 +252,10 @@ const handleWebhook = async (req, res) => {
                 product.stock += item.quantity;
                 await product.save({ transaction: t });
               }
+              await ProductMongo.findOneAndUpdate(
+                { postgresId: item.product_id.toString() },
+                { $inc: { stock: item.quantity } }
+              );
             }
             order.status = "canceled";
             await order.save({ transaction: t });
@@ -257,6 +268,7 @@ const handleWebhook = async (req, res) => {
       }
       break;
     }
+
     default:
       console.log(`Événement non géré: ${event.type}`);
       break;

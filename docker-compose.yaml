@@ -41,6 +41,18 @@ services:
       - postgres
       - mongo
 
+  stripe:
+    image: stripe/stripe-cli
+    container_name: stripe
+    restart: unless-stopped
+    environment:
+      STRIPE_API_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_DEVICE_NAME: docker-stripe
+    entrypoint: >
+      sh -c "stripe listen --forward-to node:${NODE_PORT}/api/stripe/webhook"
+    depends_on:
+      - node
+
   vue:
     image: node:20.0.0-alpine
     restart: unless-stopped
