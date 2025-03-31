@@ -6,7 +6,6 @@ const ProductPostgres = require("../models/postgres/Product")(sequelize);
 const ProductMongo = require("../models/mongo/ProductMongo");
 const productSchema = require("../schemas/productSchema");
 
-// Configuration de multer pour la gestion des fichiers (images)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
@@ -17,10 +16,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-/**
- * Récupérer des produits similaires
- * Filtrer par catégorie et exclure un produit spécifique
- */
 exports.getSimilarProducts = async (req, res) => {
   try {
     const { category, productId } = req.query;
@@ -40,29 +35,22 @@ exports.getSimilarProducts = async (req, res) => {
   }
 };
 
-/**
- * Récupérer tous les produits avec filtrage par catégorie, prix, alcool, stock et recherche sur le nom
- */
 exports.getAllProducts = async (req, res) => {
   try {
     const { category, maxPrice, alcohol, inStock, searchTerm } = req.query;
     let filter = {};
 
-    // Filtrer par toutes les catégories sélectionnées
     if (category) {
       const categoriesArray = Array.isArray(category) ? category : category.split(",");
-      // Utiliser l'opérateur $all pour que le produit contienne toutes les catégories sélectionnées
       filter.category = {
         $all: categoriesArray.map((cat) => new RegExp(cat.trim(), "i")),
       };
     }
 
-    // Filtrer par prix maximum
     if (maxPrice) {
       filter.price = { $lte: parseFloat(maxPrice) };
     }
 
-    // Filtrer par produits alcoolisés
     if (alcohol) {
       if (alcohol === "with") {
         filter.isAgeRestricted = true;
@@ -76,7 +64,6 @@ exports.getAllProducts = async (req, res) => {
       filter.stock = { $gt: 0 };
     }
 
-    // Filtrer par recherche sur le champ 'name' uniquement
     if (searchTerm) {
       filter.name = { $regex: searchTerm, $options: "i" };
     }
@@ -101,15 +88,11 @@ exports.getAllProducts = async (req, res) => {
   }
 };
 
-/**
- * Récupérer toutes les catégories uniques
- */
 exports.getCategories = async (req, res) => {
   try {
     const products = await ProductMongo.find();
     const categories = new Set();
 
-    // Extraire les catégories à partir du champ 'category'
     products.forEach((product) => {
       product.category.split(",").forEach((cat) => categories.add(cat.trim()));
     });
@@ -120,9 +103,6 @@ exports.getCategories = async (req, res) => {
   }
 };
 
-/**
- * Récupérer un produit par son ID (via MongoDB)
- */
 exports.getProductById = async (req, res) => {
   try {
     const productMongo = await ProductMongo.findOne({
@@ -151,18 +131,13 @@ exports.getProductById = async (req, res) => {
   }
 };
 
-/**
- * Créer un produit avec gestion d'image et isAgeRestricted
- */
 exports.createProduct = async (req, res) => {
   try {
     console.log("Received product data:", req.body);
 
-    // Convertir les valeurs numériques
     req.body.price = parseFloat(req.body.price);
     req.body.stock = parseInt(req.body.stock, 10);
 
-    // Valider les données du produit
     const validation = productSchema.safeParse(req.body);
     if (!validation.success) {
       console.log("Validation error:", validation.error.errors);
@@ -196,18 +171,15 @@ exports.createProduct = async (req, res) => {
     });
 
     await newProductMongo.save();
-    console.log("Product created successfully in both databases");
 
     res.status(201).json(newProductPostgres);
   } catch (err) {
-    console.error("Error during product creation:", err);
     res.status(500).json({ message: err.message });
   }
 };
 
 exports.updateProduct = async (req, res) => {
   try {
-    console.log("ID reçu pour la mise à jour:", req.params.id);
     const userRole = req.user.role;
 
     const productMongo = await ProductMongo.findOne({ postgresId: req.params.id });
@@ -215,7 +187,6 @@ exports.updateProduct = async (req, res) => {
       return res.status(404).json({ message: "Product not found in MongoDB" });
     }
 
-    // Trouver le produit dans PostgreSQL en utilisant le postgresId
     const productPostgres = await ProductPostgres.findByPk(productMongo.postgresId);
     if (!productPostgres) {
       return res.status(404).json({ message: "Product not found in PostgreSQL" });

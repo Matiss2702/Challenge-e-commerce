@@ -33,7 +33,10 @@ const createCheckoutSession = async (req, res) => {
       await OrderItem.bulkCreate(orderItemsData, { transaction: t });
 
       for (const item of items) {
-        const product = await Product.findByPk(item.product_id, { transaction: t, lock: t.LOCK.UPDATE });
+        const product = await Product.findByPk(item.product_id, {
+          transaction: t,
+          lock: t.LOCK.UPDATE,
+        });
         if (!product) throw new Error(`Produit ${item.product_id} introuvable`);
         if (product.stock < item.quantity) {
           const err = new Error(`Stock insuffisant pour le produit ${product.name}`);
@@ -64,9 +67,9 @@ const createCheckoutSession = async (req, res) => {
       }
 
       const lineItems = items.map((item) => {
-        let desc = item.description ?? "";
         const productData = { name: item.name || "Sans nom" };
-        if (desc.trim() !== "") {
+        const desc = (item.description ?? "").trim();
+        if (desc !== "") {
           productData.description = desc;
         }
         return {
@@ -116,7 +119,6 @@ const createCheckoutSession = async (req, res) => {
       res.json({ url: session.url });
     });
   } catch (error) {
-    console.error("Erreur lors de la création de la session Checkout", error);
     res.status(error.status || 500).json({ error: error.message });
   }
 };
@@ -137,7 +139,6 @@ const handleWebhook = async (req, res) => {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object;
-      console.log("Session complétée reçue:", session.id);
       try {
         const order = await Order.findOne({
           where: { stripe_checkout_session_id: session.id },
@@ -146,16 +147,18 @@ const handleWebhook = async (req, res) => {
           console.error("Aucun ordre trouvé pour session id:", session.id);
           break;
         }
-        console.log("Order trouvé:", order.id);
+
+        const finalAmountPaid = session.amount_total ? session.amount_total / 100 : order.total_amount;
 
         order.status = "paid";
         order.payment_intent_id = session.payment_intent;
+        order.total_amount = finalAmountPaid;
+
         await order.save();
-        console.log("Order mis à jour en 'paid'");
 
         const payment = await Payment.create({
           order_id: order.id,
-          amount: order.total_amount,
+          amount: finalAmountPaid,
           currency: "EUR",
           payment_method: "card",
           status: "succeeded",
@@ -163,16 +166,15 @@ const handleWebhook = async (req, res) => {
           stripe_checkout_session_id: session.id,
           receipt_url: session.receipt_url,
         });
-        console.log("Payment créé:", payment.id);
 
         await OrderMongo.findOneAndUpdate(
           { postgresId: order.id.toString() },
           {
             status: "paid",
             payment_intent_id: session.payment_intent,
+            total_amount: finalAmountPaid,
           }
         );
-        console.log("OrderMongo mis à jour en 'paid'");
 
         await PaymentMongo.create({
           postgresId: payment.id.toString(),
@@ -184,7 +186,6 @@ const handleWebhook = async (req, res) => {
           stripe_checkout_session_id: payment.stripe_checkout_session_id,
           receipt_url: payment.receipt_url,
         });
-        console.log("PaymentMongo créé");
       } catch (error) {
         console.error("Erreur dans webhook checkout.session.completed:", error);
       }
@@ -222,7 +223,6 @@ const handleWebhook = async (req, res) => {
             await order.save({ transaction: t });
             await OrderMongo.findOneAndUpdate({ postgresId: order.id.toString() }, { status: "canceled" });
           });
-          console.log("Order annulé suite à expiration");
         }
       } catch (error) {
         console.error("Erreur dans webhook checkout.session.expired:", error);
@@ -261,7 +261,6 @@ const handleWebhook = async (req, res) => {
             await order.save({ transaction: t });
             await OrderMongo.findOneAndUpdate({ postgresId: order.id.toString() }, { status: "canceled" });
           });
-          console.log("Order annulé suite à échec du paiement");
         }
       } catch (error) {
         console.error("Erreur dans webhook payment_intent.payment_failed:", error);

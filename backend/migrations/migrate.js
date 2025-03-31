@@ -1,6 +1,3 @@
-// migration.js
-
-// Charger les variables d'environnement
 require("dotenv").config();
 
 const mongoose = require("mongoose");

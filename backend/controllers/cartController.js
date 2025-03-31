@@ -44,7 +44,6 @@ exports.getOrCreateCart = async (req, res) => {
 
     return res.json(cart);
   } catch (err) {
-    console.error("Erreur getOrCreateCart:", err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -81,7 +80,6 @@ exports.getCart = async (req, res) => {
 
     return res.json(cart);
   } catch (err) {
-    console.error("Erreur getCart:", err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -168,7 +166,6 @@ exports.addItemToCart = async (req, res) => {
       return res.json(newItem);
     }
   } catch (err) {
-    console.error("Erreur addItemToCart:", err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -208,7 +205,6 @@ exports.updateCartItem = async (req, res) => {
 
     return res.json(cartItem);
   } catch (err) {
-    console.error("Erreur updateCartItem:", err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -236,7 +232,6 @@ exports.removeCartItem = async (req, res) => {
 
     return res.json({ message: "Article retiré du panier" });
   } catch (err) {
-    console.error("Erreur removeCartItem:", err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -256,7 +251,6 @@ exports.clearCart = async (req, res) => {
 
     return res.json({ message: "Panier vidé" });
   } catch (err) {
-    console.error("Erreur clearCart:", err);
     return res.status(500).json({ error: err.message });
   }
 };

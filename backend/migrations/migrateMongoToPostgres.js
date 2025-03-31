@@ -6,7 +6,6 @@ const { sequelize } = require("../models/postgres");
 const fs = require("fs");
 const path = require("path");
 
-// Fonction pour charger dynamiquement tous les modèles MongoDB
 const loadMongoModels = () => {
   const mongoModels = {};
   const mongoModelsPath = path.join(__dirname, "../models/mongo");
@@ -20,7 +19,6 @@ const loadMongoModels = () => {
   return mongoModels;
 };
 
-// Fonction pour charger dynamiquement tous les modèles PostgreSQL
 const loadPostgresModels = (sequelize) => {
   const postgresModels = {};
   const postgresModelsPath = path.join(__dirname, "../models/postgres");
@@ -41,7 +39,6 @@ const loadPostgresModels = (sequelize) => {
   return postgresModels;
 };
 
-// Fonctions de mapping pour chaque modèle
 const mapProductData = (mongoProduct) => ({
   id: mongoProduct.postgresId,
   name: mongoProduct.name,
@@ -90,7 +87,6 @@ const mapShippingDetailData = (mongoShippingDetail) => ({
   createdAt: mongoShippingDetail.createdAt,
 });
 
-// Mapping des fonctions de transformation de données
 const mappingFunctions = {
   Product: mapProductData,
   Order: mapOrderData,
@@ -99,11 +95,9 @@ const mappingFunctions = {
   ShippingDetail: mapShippingDetailData,
 };
 
-// Initialisation des modèles MongoDB et PostgreSQL
 const mongoModels = loadMongoModels();
 const postgresModels = loadPostgresModels(sequelize);
 
-// Fonction de migration générique pour chaque collection
 const migrateCollection = async (mongoModel, postgresModel, mapDataFn) => {
   try {
     const mongoData = await mongoModel.find();
@@ -119,7 +113,6 @@ const migrateCollection = async (mongoModel, postgresModel, mapDataFn) => {
   }
 };
 
-// Script de migration global
 const migrateData = async () => {
   try {
     const mongoUrl = process.env.MONGO_URI;
@@ -138,7 +131,6 @@ const migrateData = async () => {
     await sequelize.sync({ force: true });
     console.log("Tables PostgreSQL synchronisées");
 
-    // Boucler sur tous les modèles MongoDB pour les migrer vers PostgreSQL
     for (const [modelName, mongoModel] of Object.entries(mongoModels)) {
       const postgresModelName = modelName.replace("Mongo", "");
       const postgresModel = postgresModels[postgresModelName];

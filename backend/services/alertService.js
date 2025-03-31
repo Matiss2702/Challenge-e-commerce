@@ -13,10 +13,8 @@ const sendRestockAlerts = async (product) => {
       return;
     }
 
-    // Rassembler les emails
     const emails = storeKeepers.map((user) => user.email).join(",");
 
-    // Préparer le contenu de l'email
     const subject = `Stock faible pour le produit ${product.name}`;
     const htmlContent = `
       <p>Bonjour,</p>
@@ -24,7 +22,6 @@ const sendRestockAlerts = async (product) => {
       <p>Merci de réapprovisionner ce produit dans les plus brefs délais.</p>
     `;
 
-    // Envoyer l'email
     await sendEmail(emails, subject, htmlContent);
     console.log("Alertes de réapprovisionnement envoyées aux magasiniers.");
   } catch (error) {

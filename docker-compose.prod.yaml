@@ -1,0 +1,68 @@
+services:
+  mongo:
+    image: mongo:latest
+    restart: unless-stopped
+    expose:
+      - "27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+
+  postgres:
+    image: postgres:latest
+    restart: unless-stopped
+    expose:
+      - "5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+
+  node:
+    image: node:20.0.0-alpine
+    restart: unless-stopped
+    environment:
+      PORT: ${NODE_PORT}
+      MONGO_URI: ${MONGO_URI}
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+    expose:
+      - "${NODE_PORT}"
+    volumes:
+      - ./backend:/home/node/app
+    working_dir: /home/node/app
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      - postgres
+      - mongo
+
+  stripe:
+    image: stripe/stripe-cli
+    container_name: stripe
+    restart: unless-stopped
+    environment:
+      STRIPE_API_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_DEVICE_NAME: docker-stripe
+    entrypoint: >
+      sh -c "stripe listen --forward-to node:${NODE_PORT}/api/stripe/webhook"
+    depends_on:
+      - node
+
+  vue:
+    image: node:20.0.0-alpine
+    restart: unless-stopped
+    user: root
+    working_dir: /home/node
+    command: sh -c "npm install && npm run build"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./frontend:/home/node
+
+volumes:
+  mongo-data: {}
+  postgres-data: {}

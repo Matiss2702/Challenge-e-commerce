@@ -1,4 +1,3 @@
-// config/stripeConfig.js
 const Stripe = require("stripe");
 const dotenv = require("dotenv");
 

@@ -1,7 +1,10 @@
 backend/.env
 backend/node_modules/
+backend/.env.production
 backend/package-lock.json
 frontend/package-lock.json
 frontend/.env
+frontend/.env.production
 poste/node_modules/
 .env
+.env.production

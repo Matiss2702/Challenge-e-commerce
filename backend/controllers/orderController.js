@@ -6,7 +6,6 @@ const orderSchema = require("../schemas/orderSchema");
 
 exports.getAllOrders = async (req, res) => {
   try {
-    // On récupère toutes les commandes côté Mongo
     const orders = await OrderMongo.find();
     res.json(orders);
   } catch (err) {
@@ -51,7 +50,6 @@ exports.getUserOrdersController = async (req, res) => {
 
     res.json(detailedOrders);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: err.message });
   }
 };

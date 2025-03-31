@@ -181,9 +181,6 @@ exports.requestPasswordReset = async (req, res) => {
   }
 };
 
-/**
- * Réinitialiser le mot de passe
- */
 exports.resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
@@ -204,7 +201,6 @@ exports.resetPassword = async (req, res) => {
     userMongo.password = hashedPassword;
     await userMongo.save();
 
-    // Synchroniser avec Postgres
     await User.update({ password: hashedPassword }, { where: { id: userMongo.postgresId } });
 
     return res.status(200).json({ message: "Mot de passe mis à jour avec succès." });

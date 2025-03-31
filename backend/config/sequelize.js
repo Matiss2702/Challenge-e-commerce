@@ -10,4 +10,4 @@ sequelize
   .then(() => console.log("PostgreSQL connected"))
   .catch((err) => console.error("Unable to connect to the database:", err));
 
-module.exports = sequelize; // Retournez directement l'instance
+module.exports = sequelize;
