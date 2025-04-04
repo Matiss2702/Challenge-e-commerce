@@ -137,6 +137,7 @@ exports.createProduct = async (req, res) => {
 
     req.body.price = parseFloat(req.body.price);
     req.body.stock = parseInt(req.body.stock, 10);
+    req.body.isAgeRestricted = req.body.isAgeRestricted === "true";
 
     const validation = productSchema.safeParse(req.body);
     if (!validation.success) {
